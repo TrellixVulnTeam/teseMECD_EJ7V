@@ -1,0 +1,10 @@
+**/data/**
+books/
+**/manning_project/datasets/**
+**/e-ViL/**
+**/__pycache__/**
+**/.ipynb_checkpoints/**
+**/my_model/**
+**/my-model/**
+**/datasets/**
+
