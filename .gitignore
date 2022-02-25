@@ -1,7 +1,7 @@
 **/data/**
 books/
 **/manning_project/datasets/**
-**/e-ViL/**
+**/e-ViL/data
 **/__pycache__/**
 **/.ipynb_checkpoints/**
 **/my_model/**
