@@ -38,7 +38,7 @@ def binary_to_mp(logit):
     return logit
 
 
-class eUGModel(nn.Module):
+class MyModel(nn.Module):
     
     def __init__(self, train_type, num_answers, task, model="uniter"):
 
