@@ -225,7 +225,7 @@ for epoch in range(1):
         outputs = model.forward(questions,images,labels)
         break
 """
-#trainer.train_model()
+trainer.train_model()
 """
 train,test  = trainer.get_datasets()
 output = model.run(train)
