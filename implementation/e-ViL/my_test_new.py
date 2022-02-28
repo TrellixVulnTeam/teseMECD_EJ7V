@@ -155,18 +155,27 @@ class eViLTorchDataset(Dataset):
 
     def __getitem__(self, item: int):
         datum = self.raw_dataset.data[item]
+        #print("DATUM\n")
+        #print(datum)
         img_id = datum["img_id"]
         ques_id = datum["question_id"]
         ques = datum["sent"]
 
         # getting image features
+        print(img_id.encode("utf-8"))
         dump = self.txn.get(img_id.encode("utf-8"))
+        print(dump)
         nbb = self.name2nbb[img_id]
         img_dump = msgpack.loads(dump, raw=False)
-        #print(img_dump["features"].keys())
-        print(img_dump["features"][b'data'])
+        #print(nbb)
+        #print(img_dump["features"][b'data'])
+        #print(img_dump.keys())
+        print(img_dump["features"].keys())
+        print(img_dump["norm_bb"].keys())
         feats = img_dump["features"][b'data'][:nbb, :]
         img_bb = img_dump["norm_bb"][b'data'][:nbb, :]
+        #feats = img_dump["features"][:nbb, :]
+        #img_bb = img_dump["norm_bb"][:nbb, :]
 
         # get box to same format than used by code's authors
         boxes = np.zeros((img_bb.shape[0], 7), dtype="float32")
