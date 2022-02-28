@@ -19,13 +19,17 @@ from tqdm import tqdm
 from datasets import load_metric
 import random
 from my_param import args
-from my_eval import eval_nlp_scores, input_subset, get_nlg_scores
+from src.my_eval import eval_nlp_scores, input_subset, get_nlg_scores
 from my_model import MyModel
 from my_generation import generate_text
 from src.expl_tokenization import VCRGpt2Tokenizer
 
 DataTuple = collections.namedtuple("DataTuple", "dataset loader evaluator")
 
+"""
+Run with:
+--task esnlive --train data/esnlive/esnlive_train.json --val data/esnlive/esnlive_dev.json --save_steps 5000 --output experiments/esnlive_run1/train
+"""
 
 def ctime():
     return strftime("%Y-%m-%d %H:%M:%S", gmtime())
@@ -159,8 +163,10 @@ class eViLTorchDataset(Dataset):
         dump = self.txn.get(img_id.encode("utf-8"))
         nbb = self.name2nbb[img_id]
         img_dump = msgpack.loads(dump, raw=False)
-        feats = img_dump["features"][:nbb, :]
-        img_bb = img_dump["norm_bb"][:nbb, :]
+        #print(img_dump["features"].keys())
+        print(img_dump["features"][b'data'])
+        feats = img_dump["features"][b'data'][:nbb, :]
+        img_bb = img_dump["norm_bb"][b'data'][:nbb, :]
 
         # get box to same format than used by code's authors
         boxes = np.zeros((img_bb.shape[0], 7), dtype="float32")

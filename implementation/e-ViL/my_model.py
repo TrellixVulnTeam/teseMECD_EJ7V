@@ -82,33 +82,9 @@ class MyModel(nn.Module):
         :param leng: (b,) Type -- int numpy array
         :return: (b, num_answer) The logit of each answers.
         """
-
-        if self.task == "vcr":
-            # create answer-question pairs
-            model_input = [
-                [s + " [SEP] " + answer for answer in answers[idx]]
-                for idx, s in enumerate(sent)
-            ]
-            model_input = [
-                item for sublist in model_input for item in sublist
-            ]  # flatten
-            x, _ = self.encoder(
-                model_input,
-                feat.repeat_interleave(repeats=4, dim=0),
-                pos.repeat_interleave(repeats=4, dim=0),
-            )
-            logit = self.vcr_fc(x)
-
-            # get 4-way logit for explanation generation
-            logit_expl = binary_to_mp(logit)  # for explanation conditioning during eval
-
-            # get feats without answer
-            _, feats = self.encoder(sent, feat, pos)
-
-        else:
-            x, feats = self.encoder(sent, feat, pos)
-            logit = self.logit_fc(x)
-            logit_expl = logit  # for explanation conditioning during eval
+        x, feats = self.encoder(sent, feat, pos)
+        logit = self.logit_fc(x)
+        logit_expl = logit  # for explanation conditioning during eval
 
         if self.train_type == "bb":  # backbone only
             return logit, None, None, None, None
@@ -117,8 +93,7 @@ class MyModel(nn.Module):
         uniter_dim = feats.shape[1]
         if type(gt_label) != type(None):
             # change to one-hot
-            if self.task == "esnlive":
-                gt_label = torch.nn.functional.one_hot(gt_label)
+            gt_label = torch.nn.functional.one_hot(gt_label)
             inputs, token_type_ids, labels = preprocess_gpt2(
                 self.decoder.tokenizer, sent, expls, gt_label, uniter_dim, label_dict
             )  # training

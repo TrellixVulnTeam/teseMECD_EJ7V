@@ -1,0 +1,23 @@
+
+Namespace(batch_size=32, bb_path=None, classifier_weight=1, device='cpu', dropout=0.1, epochs=2, from_scratch=False, grad_accum=1, gt_cond=None, load_pretrained=None, load_trained=None, lr=2e-05, max_seq_length=20, mce_loss=False, model='uniter', multiGPU=False, num_workers=0, optim='bert', optimizer='bert', output='models/trained/', prob_eval=1, save_steps=None, seed=9595, task=None, temperature=2, test=None, tqdm=True, train='train_x', train_type='all', type_vocab_size=2, valid='val_x', warmup_steps=50)
+
+Namespace(batch_size=32, bb_path=None, classifier_weight=1, device='cpu', dropout=0.1, epochs=2, from_scratch=False, grad_accum=1, gt_cond=None, load_pretrained=None, load_trained=None, lr=2e-05, max_seq_length=20, mce_loss=False, model='uniter', multiGPU=False, num_workers=0, optim='bert', optimizer='bert', output='models/trained/', prob_eval=1, save_steps=None, seed=9595, task='esnlive', temperature=2, test=None, tqdm=True, train='train_x', train_type='all', type_vocab_size=2, valid='val_x', warmup_steps=50)
+
+tensorboard dev upload --logdir C:\Users\Utilizador\IST\tese_MECD\implementation\e-ViL\models/trained/ --name ug-tt_all-bs32-lr2e-05-t2
+ Device: 0
+ Process ID: 13500
+Namespace(batch_size=32, bb_path=None, classifier_weight=1, device='cpu', dropout=0.1, epochs=2, from_scratch=False, grad_accum=1, gt_cond=None, load_pretrained=None, load_trained=None, lr=2e-05, max_seq_length=20, mce_loss=False, model='uniter', multiGPU=False, num_workers=0, optim='bert', optimizer='bert', output='models/trained/', prob_eval=1, save_steps=None, seed=9595, task='esnlive', temperature=2, test=None, tqdm=True, train='train_x', train_type='all', type_vocab_size=2, valid='val_x', warmup_steps=50)
+
+tensorboard dev upload --logdir C:\Users\Utilizador\IST\tese_MECD\implementation\e-ViL\models/trained/ --name ug-tt_all-bs32-lr2e-05-t2
+ Device: 0
+ Process ID: 13500
+Namespace(batch_size=32, bb_path=None, classifier_weight=1, device='cpu', dropout=0.1, epochs=2, from_scratch=False, grad_accum=1, gt_cond=None, load_pretrained=None, load_trained=None, lr=2e-05, max_seq_length=20, mce_loss=False, model='uniter', multiGPU=False, num_workers=0, optim='bert', optimizer='bert', output='models/trained/', prob_eval=1, save_steps=None, seed=9595, task='esnlive', temperature=2, test=None, tqdm=True, train='train_x', train_type='all', type_vocab_size=2, valid='val_x', warmup_steps=50)
+
+tensorboard dev upload --logdir C:\Users\Utilizador\IST\tese_MECD\implementation\e-ViL\models/trained/ --name ug-tt_all-bs32-lr2e-05-t2
+ Device: 0
+ Process ID: 13500
+Namespace(batch_size=32, bb_path=None, classifier_weight=1, device='cpu', dropout=0.1, epochs=2, from_scratch=False, grad_accum=1, gt_cond=None, load_pretrained=None, load_trained=None, lr=2e-05, max_seq_length=20, mce_loss=False, model='uniter', multiGPU=False, num_workers=0, optim='bert', optimizer='bert', output='models/trained/', prob_eval=1, save_steps=None, seed=9595, task='esnlive', temperature=2, test=None, tqdm=True, train='train_x', train_type='all', type_vocab_size=2, valid='val_x', warmup_steps=50)
+
+tensorboard dev upload --logdir C:\Users\Utilizador\IST\tese_MECD\implementation\e-ViL\models/trained/ --name ug-tt_all-bs32-lr2e-05-t2
+ Device: 0
+ Process ID: 13500

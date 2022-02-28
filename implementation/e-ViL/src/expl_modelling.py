@@ -23,9 +23,11 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import torch
 import torch.nn as nn
 from transformers import GPT2PreTrainedModel  # class to handle weights initialization
-from transformers.modeling_bert import BertLayerNorm as LayerNorm
-from transformers.modeling_gpt2 import Block
+#from transformers.models.bert.modeling_bert import BertLayerNorm as LayerNorm
+#from transformers.models.gpt2.modeling_gpt2 import Block
+from pytorch_transformers.modeling_gpt2 import Block
 
+LayerNorm = torch.nn.LayerNorm
 
 class GPT2VisionAttentiveTransformer(GPT2PreTrainedModel):
     def __init__(self, config):
