@@ -7,8 +7,8 @@ import torch
 from torch.utils.data import Dataset
 
 import lmdb
-import msgpack
-import msgpack_numpy
+#import msgpack
+import msgpack_numpy as msgpack
 
 import collections
 from torch.utils.data.dataloader import DataLoader
@@ -162,20 +162,21 @@ class eViLTorchDataset(Dataset):
         ques = datum["sent"]
 
         # getting image features
-        print(img_id.encode("utf-8"))
+        #print(img_id.encode("utf-8"))
         dump = self.txn.get(img_id.encode("utf-8"))
-        print(dump)
+        #print(dump)
         nbb = self.name2nbb[img_id]
         img_dump = msgpack.loads(dump, raw=False)
         #print(nbb)
         #print(img_dump["features"][b'data'])
         #print(img_dump.keys())
-        print(img_dump["features"].keys())
-        print(img_dump["norm_bb"].keys())
-        feats = img_dump["features"][b'data'][:nbb, :]
-        img_bb = img_dump["norm_bb"][b'data'][:nbb, :]
-        #feats = img_dump["features"][:nbb, :]
-        #img_bb = img_dump["norm_bb"][:nbb, :]
+        #print(img_dump["features"].keys())
+        #print(img_dump["norm_bb"].keys())
+        feats = img_dump["features"][:nbb, :]
+        img_bb = img_dump["norm_bb"][:nbb, :]
+        #feats = img_dump["features"][b'data'][:nbb,:]
+        #img_bb = img_dump["norm_bb"][b'data'][:nbb,:]
+        
 
         # get box to same format than used by code's authors
         boxes = np.zeros((img_bb.shape[0], 7), dtype="float32")

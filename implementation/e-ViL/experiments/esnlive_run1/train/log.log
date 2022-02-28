@@ -170,3 +170,31 @@ tensorboard dev upload --logdir C:\Users\Utilizador\IST\tese_MECD\implementation
  Process ID: 11220
 2022-02-28 02:40:01 || Loaded train set of size 401717 and val set of size 14339.
 2022-02-28 02:40:16 || Model loaded. Batch size 32 | lr 2e-05 | task: esnlive | type: all.
+Namespace(batch_size=32, bb_path=None, classifier_weight=1, device='cpu', dropout=0.1, epochs=2, from_scratch=False, grad_accum=1, gt_cond=None, load_pretrained=None, load_trained=None, lr=2e-05, max_seq_length=20, mce_loss=False, model='uniter', multiGPU=False, num_workers=0, optim='bert', optimizer='bert', output='experiments/esnlive_run1/train', prob_eval=1, save_steps=5000, seed=9595, task='esnlive', temperature=2, test=None, tqdm=True, train='data/esnlive/esnlive_train.json', train_type='all', type_vocab_size=2, valid='data/esnlive/esnlive_dev.json', warmup_steps=50)
+
+tensorboard dev upload --logdir C:\Users\Utilizador\IST\tese_MECD\implementation\e-ViL\experiments/esnlive_run1/train --name ug-tt_all-bs32-lr2e-05-t2
+ Device: 0
+ Process ID: 14844
+2022-02-28 16:20:45 || Loaded train set of size 401717 and val set of size 14339.
+2022-02-28 16:21:03 || Model loaded. Batch size 32 | lr 2e-05 | task: esnlive | type: all.
+Namespace(batch_size=32, bb_path=None, classifier_weight=1, device='cpu', dropout=0.1, epochs=2, from_scratch=False, grad_accum=1, gt_cond=None, load_pretrained=None, load_trained=None, lr=2e-05, max_seq_length=20, mce_loss=False, model='uniter', multiGPU=False, num_workers=0, optim='bert', optimizer='bert', output='experiments/esnlive_run1/train', prob_eval=1, save_steps=5000, seed=9595, task='esnlive', temperature=2, test=None, tqdm=True, train='data/esnlive/esnlive_train.json', train_type='all', type_vocab_size=2, valid='data/esnlive/esnlive_dev.json', warmup_steps=50)
+
+tensorboard dev upload --logdir C:\Users\Utilizador\IST\tese_MECD\implementation\e-ViL\experiments/esnlive_run1/train --name ug-tt_all-bs32-lr2e-05-t2
+ Device: 0
+ Process ID: 14844
+2022-02-28 16:26:27 || Loaded train set of size 401717 and val set of size 14339.
+2022-02-28 16:26:42 || Model loaded. Batch size 32 | lr 2e-05 | task: esnlive | type: all.
+Namespace(batch_size=32, bb_path=None, classifier_weight=1, device='cpu', dropout=0.1, epochs=2, from_scratch=False, grad_accum=1, gt_cond=None, load_pretrained=None, load_trained=None, lr=2e-05, max_seq_length=20, mce_loss=False, model='uniter', multiGPU=False, num_workers=0, optim='bert', optimizer='bert', output='experiments/esnlive_run1/train', prob_eval=1, save_steps=5000, seed=9595, task='esnlive', temperature=2, test=None, tqdm=True, train='data/esnlive/esnlive_train.json', train_type='all', type_vocab_size=2, valid='data/esnlive/esnlive_dev.json', warmup_steps=50)
+
+tensorboard dev upload --logdir C:\Users\Utilizador\IST\tese_MECD\implementation\e-ViL\experiments/esnlive_run1/train --name ug-tt_all-bs32-lr2e-05-t2
+ Device: 0
+ Process ID: 14844
+2022-02-28 16:27:07 || Loaded train set of size 401717 and val set of size 14339.
+2022-02-28 16:27:21 || Model loaded. Batch size 32 | lr 2e-05 | task: esnlive | type: all.
+Namespace(batch_size=32, bb_path=None, classifier_weight=1, device='cpu', dropout=0.1, epochs=2, from_scratch=False, grad_accum=1, gt_cond=None, load_pretrained=None, load_trained=None, lr=2e-05, max_seq_length=20, mce_loss=False, model='uniter', multiGPU=False, num_workers=0, optim='bert', optimizer='bert', output='experiments/esnlive_run1/train', prob_eval=1, save_steps=5000, seed=9595, task='esnlive', temperature=2, test=None, tqdm=True, train='data/esnlive/esnlive_train.json', train_type='all', type_vocab_size=2, valid='data/esnlive/esnlive_dev.json', warmup_steps=50)
+
+tensorboard dev upload --logdir C:\Users\Utilizador\IST\tese_MECD\implementation\e-ViL\experiments/esnlive_run1/train --name ug-tt_all-bs32-lr2e-05-t2
+ Device: 0
+ Process ID: 9880
+2022-02-28 16:30:47 || Loaded train set of size 401717 and val set of size 14339.
+2022-02-28 16:31:01 || Model loaded. Batch size 32 | lr 2e-05 | task: esnlive | type: all.
