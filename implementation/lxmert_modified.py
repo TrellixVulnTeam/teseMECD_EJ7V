@@ -10,18 +10,19 @@ from transformers import Trainer
 class Lxmert(LxmertModel):
     def __init__(self,config):
         super().__init__(LxmertConfig.from_pretrained(config))
-        numb_labels = 2
+        self.config.problem_type = "multi_label_classification"
+        numb_labels = 3
         self.num_labels = numb_labels
         self.lxmert_tokenizer = LxmertTokenizer.from_pretrained("unc-nlp/lxmert-base-uncased")
         self.rcnn_cfg = utils.Config.from_pretrained("unc-nlp/frcnn-vg-finetuned")
         self.rcnn = GeneralizedRCNN.from_pretrained("unc-nlp/frcnn-vg-finetuned", config=self.rcnn_cfg)
         self.image_preprocess = Preprocess(self.rcnn_cfg)
-        #self.lxmert = LxmertModel.from_pretrained("unc-nlp/lxmert-base-uncased")
-        self.classifier = torch.nn.Linear(self.lxmert.config.hidden_size, numb_labels)
+        self.lxmert = LxmertModel.from_pretrained("unc-nlp/lxmert-base-uncased")
+        self.classification = torch.nn.Linear(self.lxmert.config.hidden_size, numb_labels)
         # don't forget to init the weights for the new layers
         self.init_weights()
     
-    def forward(self,text,img):
+    def forward(self,text,img,labels):
         # run lxmert
         test_question = [text]
         URL = img
@@ -54,7 +55,7 @@ class Lxmert(LxmertModel):
         normalized_boxes = output_dict.get("normalized_boxes")
         features = output_dict.get("roi_features")
         
-        output_vqa = self.lxmert(
+        output = self.lxmert(
             input_ids=inputs.input_ids,
             attention_mask=inputs.attention_mask,
             visual_feats=features,
@@ -64,7 +65,22 @@ class Lxmert(LxmertModel):
             output_attentions=False,
         )
         
-        return output_vqa
+        aux = self.classification(output.pooled_output[0])
+        output.logits = aux
+        output.loss = None
+        
+        
+        if self.config.problem_type == "multi_label_classification":
+          loss_fct = torch.nn.BCEWithLogitsLoss()
+          output.loss = loss_fct(output.logits, labels)
+        elif self.config.problem_type == "regression":
+          loss_fct = torch.nn.MSELoss()
+          if self.num_labels == 1: output.loss = loss_fct(output.logits.squeeze(), labels.squeeze())
+          else: output.loss = loss_fct(output.logits, labels)
+        elif self.config.problem_type == "single_label_classification":
+          loss_fct = torch.nn.CrossEntropyLoss()
+          output.loss = loss_fct(output.logits.view(-1, self.num_labels), labels.view(-1)) 
+        return output
     
     def train(self,train,test):
         trainer = Trainer(model=self, train_dataset = train, eval_dataset = test)
@@ -74,18 +90,26 @@ class Lxmert(LxmertModel):
     def run(self):
         data_path = './e-ViL/data/'
         train = pd.read_csv(data_path+'esnlive_train.csv')
+        labels_encoding = {'contradiction':torch.Tensor([1.,0.,0.]),'neutral': torch.Tensor([0.,1.,0.]),
+                           'entailment':torch.Tensor([0.,0.,1.])}
+        train['gold_label']=train['gold_label'].apply(lambda label: labels_encoding[label])
         #test = pd.read_csv(data_path+'esnlive_test.csv')
         #results = pd.read_csv(data_path+'flickr30k_images/results.csv', sep ='|')
         sample = train.sample(n=100, random_state=1)
         sample_train, sample_test = train_test_split(sample, test_size=0.2)
-        img_path = data_path+'flickr30k_images/flickr30k_images/'+"32542645.jpg"#train.loc[90,'Flickr30kID']
-        question = "How many people are in the image?"
+        sample_train.reset_index(inplace=True,drop=True)
+        sample_test.reset_index(inplace=True,drop=True)
+        #img_path = data_path+'flickr30k_images/flickr30k_images/'+"32542645.jpg"#train.loc[90,'Flickr30kID']
+        #question = "How many people are in the image?"
+        img_path = data_path+'flickr30k_images/flickr30k_images/'+ sample_train.loc[50,'Flickr30kID']#"32542645.jpg"
+        question = sample_train.loc[50,'hypothesis'] #"How many people are in the image?"
+        label = sample_train.loc[50,'gold_label']
         #print(self.forward(question,img_path))
         #self.train(sample_train,sample_test)
-        return self.forward(question,img_path)
+        return self.forward(question,img_path,label)
         
 
-if __name__ == "__main__":
-    model = Lxmert("unc-nlp/lxmert-base-uncased")
-    output = model.run()
-    print(output)
+#if __name__ == "__main__":
+model = Lxmert("unc-nlp/lxmert-base-uncased")
+output = model.run()
+print(output)

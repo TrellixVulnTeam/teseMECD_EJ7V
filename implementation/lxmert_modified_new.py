@@ -69,7 +69,7 @@ class MyTrainer():
         train.rename(columns={ train.columns[0]: "question", train.columns[1]: "image",
                               train.columns[2]: "label" }, inplace = True)
         features = Features({k:v[0] for k,v in pd.DataFrame(train.dtypes).T.to_dict('list').items()})
-        sample = train.sample(n=100, random_state=1)
+        sample = train.sample(n=4, random_state=1)
         sample_train, sample_test = train_test_split(sample, test_size=0.2)
         sample_train.reset_index(inplace=True,drop=True)
         sample_test.reset_index(inplace=True,drop=True)

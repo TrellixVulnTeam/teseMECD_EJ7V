@@ -10,6 +10,23 @@ from processing_image import Preprocess
 from transformers import Trainer, TrainingArguments, AdamW
 from torch.utils.data import DataLoader
 
+
+class MyDataset(torch.utils.data.Dataset):
+    def __init__(self,inputs,features, normalized_boxes,labels):
+        self.inputs = inputs
+        self.features = features
+        self.normalized_boxes = normalized_boxes
+        self.labels = labels
+    
+    def __getitem__(self, idx):
+        item = {'inputs':self.inputs[idx],'features':self.features[idx],
+                'normalized_boxes': self.normalized_boxes[idx]}
+        item['labels'] = self.labels[idx]
+        return item
+
+    def __len__(self):
+        return len(self.labels)
+    
 class MyDataLoader():
     def __init__(self):
         self.lxmert_tokenizer = LxmertTokenizer.from_pretrained("unc-nlp/lxmert-base-uncased")
@@ -17,8 +34,16 @@ class MyDataLoader():
         self.rcnn = GeneralizedRCNN.from_pretrained("unc-nlp/frcnn-vg-finetuned", config=self.rcnn_cfg)
         self.image_preprocess = Preprocess(self.rcnn_cfg)
         self.train, self.test = self.read_datasets()
-        self.processed_train = self.process_dataset(self.train)
-        self.processed_test = self.process_dataset(self.test)
+        self.train = self.process_dataset(self.train)
+        self.test = self.process_dataset(self.test)
+        self.train_dataset = MyDataset(self.train['inputs'].values,
+                                 self.train['features'].values,
+                                 self.train['normalized_boxes'].values,
+                                 self.train['label'].values)
+        self.test_dataset = MyDataset(self.test['inputs'].values,
+                                 self.test['features'].values,
+                                 self.test['normalized_boxes'].values,
+                                 self.test['label'].values)
         return
     
     def read_datasets(self,data_path='./e-ViL/data/'):
@@ -41,7 +66,7 @@ class MyDataLoader():
         return sample_train, sample_test
     
     def get_processed_datasets(self):
-        return self.processed_test, self.processed_test
+        return self.train_dataset, self.test_dataset
         
     def get_visual_features(self,images):
         #preprocess image
@@ -80,23 +105,6 @@ class MyDataLoader():
         dataset['normalized_boxes'] = boxes_features.apply(lambda x: x[0])
         dataset['features'] = boxes_features.apply(lambda x: x[1])
         return dataset
-    
-class MyDataset(torch.utils.data.Dataset):
-    def __init__(self,inputs,features, normalized_boxes,labels):
-        self.inputs = inputs
-        self.features = features
-        self.normalized_boxes = normalized_boxes
-        self.labels = labels
-    
-    def __getitem__(self, idx):
-        item = {'inputs':self.inputs[idx],'features':self.features[idx],
-                'normalized_boxes': self.normalized_boxes[idx]}
-        item['labels'] = self.labels[idx]
-        return item
-
-    def __len__(self):
-        return len(self.labels)
-    
     
 class MyTrainer():
     def __init__(self,model,processed_train,processed_test):
@@ -186,10 +194,6 @@ class Lxmert(LxmertModel):
 #if __name__ == "__main__":
 model = Lxmert("unc-nlp/lxmert-base-uncased")
 train, test = MyDataLoader().get_processed_datasets()
-train = MyDataset(train['inputs'].values,train['features'].values,train['normalized_boxes'].values,
-                  train['label'].values)
-test = MyDataset(test['inputs'].values,test['features'].values,test['normalized_boxes'].values,
-                  test['label'].values)
 #trainer = MyTrainer(model,train, test)
 
 train_loader = DataLoader(train, batch_size=16, shuffle=True)
