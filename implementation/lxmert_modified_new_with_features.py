@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from datasets import Dataset, load_dataset, Features
 from sklearn.model_selection import train_test_split
-from transformers import LxmertTokenizer, LxmertConfig, LxmertModel, LxmertForQuestionAnswering, PretrainedConfig
+from transformers import LxmertTokenizer, LxmertConfig, LxmertModel, LxmertForQuestionAnswering, PretrainedConfig, TrainingArguments
 from modeling_frcnn import GeneralizedRCNN
 import utils
 from processing_image import Preprocess
@@ -108,8 +108,13 @@ class MyDataLoader():
     
 class MyTrainer():
     def __init__(self,model,processed_train,processed_test):
+        self.training_arguments = TrainingArguments('./output_dir',
+                                                    per_device_train_batch_size=1
+                                                    , per_device_eval_batch_size = 1,
+                                                    no_cuda = True)
         self.trainer = Trainer(model=model, train_dataset=processed_train, 
                                eval_dataset=processed_test)
+        
     
     def my_train(self):
         self.trainer.train()

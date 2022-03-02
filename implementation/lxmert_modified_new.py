@@ -17,9 +17,9 @@ class MyDataset(torch.utils.data.Dataset):
         self.labels = labels
     
     def __getitem__(self, idx):
-        item = {'questions':self.questions[idx],'images':self.images[idx]}
-        item['labels'] = self.labels[idx]
-        return self.questions[idx], self.images[idx], self.labels[idx]
+        item = {'text':self.questions[idx],'img':self.images[idx],
+                'label': self.labels[idx]}
+        return item
 
     def __len__(self):
         return len(self.labels)
@@ -36,16 +36,44 @@ class MyTrainer():
                                  self.test['label'].values)
         self.training_arguments = TrainingArguments('./output_dir',
                                                     per_device_train_batch_size=1
-                                                    , per_device_eval_batch_size = 1)
-        self.trainer = Trainer(model=model, train_dataset=self.train_dataset, 
-                               eval_dataset=self.test_dataset, args = self.training_arguments)
-        
-        
+                                                    , per_device_eval_batch_size = 1,
+                                                    no_cuda = True)
+                                                    #,data_collator = self.collate_fn)
+        self.trainer = Trainer(args = self.training_arguments,
+                               model=model, train_dataset=self.train_dataset, 
+                               eval_dataset=self.test_dataset)
+    """
+    def collate_fn(batch):
+
+        text, img, label = [], [], []
+
+        for example in batch:
+            text.append(example[0])
+            img.append(example[1])
+            label.append(example[2])
+
+        max_len = max(map(lambda x: x.shape[0], feats))
+        padded_feats = [pad_array(x, max_len) for x in feats]
+        padded_boxes = [pad_array(x, max_len) for x in boxes]
+
+        return (
+            ques_id,
+            torch.tensor(padded_feats).float(),
+            torch.tensor(padded_boxes).float(),
+            tuple(sent),
+            torch.tensor(target),
+            tuple(expl),
+            answers,
+        )
+    """
+    
     def read_datasets(self):
         data_path = './e-ViL/data/'
         train = pd.read_csv(data_path+'esnlive_train.csv')
-        labels_encoding = {'contradiction':torch.Tensor([1.,0.,0.]),'neutral': torch.Tensor([0.,1.,0.]),
-                           'entailment':torch.Tensor([0.,0.,1.])}
+        #labels_encoding = {'contradiction':torch.Tensor([1.,0.,0.]),'neutral': torch.Tensor([0.,1.,0.]),
+        #                   'entailment':torch.Tensor([0.,0.,1.])}
+        labels_encoding = {'contradiction':0,'neutral': 1,
+                           'entailment':2}
         train = train[['hypothesis','Flickr30kID','gold_label']]
         train['gold_label']=train['gold_label'].apply(lambda label: labels_encoding[label])
         train['Flickr30kID'] = train['Flickr30kID'].apply(lambda x: data_path+'flickr30k_images/flickr30k_images/'+x)
@@ -120,12 +148,13 @@ class Lxmert(LxmertModel):
           self.loss_fct = torch.nn.CrossEntropyLoss()
           self.output_loss = lambda output,labels : self.loss_fct(output.logits.view(-1, self.num_labels), labels.view(-1)) 
     
-    def forward(self,text,img, labels):
+    def forward(self,item):
         # run lxmert
-        test_question = text
-        URL = img
+        text = item.text
+        img = item.img
+        label = item.label
         
-        images, sizes, scales_yx = self.image_preprocess(URL)
+        images, sizes, scales_yx = self.image_preprocess(img)
         
         #preprocess image
         output_dict = self.rcnn(
@@ -139,7 +168,7 @@ class Lxmert(LxmertModel):
         
         #preprocess text
         inputs = self.lxmert_tokenizer(
-            test_question,
+            text,
             padding="max_length",
             max_length=20,
             truncation=True,
@@ -162,22 +191,11 @@ class Lxmert(LxmertModel):
             return_dict=True,
             output_attentions=False,
         )
-        
-        """
-        #aux_vision = output.vision_output[0]
-        #aux_vision = self.visual_projection(aux_vision)
-        #aux_text = output.language_output[0]
-        #aux_text = self.text_projection(aux_text)
-        #aux_pooled = output.pooled_output[0]
-        aux = torch.cat((aux_vision,aux_text), dim=1)
-        aux = self.new_transformer_encoder(aux)
-        aux = aux.mean(dim=1)
-        """
-        
+                
         aux = self.classification(output.pooled_output[0])
         output.logits = aux
         output.loss = None
-        output.loss = self.output_loss(output, labels)
+        output.loss = self.output_loss(output, label)
         return output
         
         
