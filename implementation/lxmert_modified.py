@@ -8,9 +8,9 @@ from processing_image import Preprocess
 from transformers import Trainer
     
 class Lxmert(LxmertModel):
-    def __init__(self,config):
-        super().__init__(LxmertConfig.from_pretrained(config))
-        self.config.problem_type = "multi_label_classification"
+    def __init__(self):
+        super().__init__(LxmertConfig.from_pretrained("unc-nlp/lxmert-base-uncased"))
+        self.config.problem_type = "single_label_classification"
         numb_labels = 3
         self.num_labels = numb_labels
         self.lxmert_tokenizer = LxmertTokenizer.from_pretrained("unc-nlp/lxmert-base-uncased")
@@ -110,15 +110,17 @@ class Lxmert(LxmertModel):
         
 
 #if __name__ == "__main__":
-model = Lxmert("unc-nlp/lxmert-base-uncased")
+model = Lxmert()
 output = model.run()
+print(output.logits)
+print(output.loss)
 train = pd.read_csv('./e-ViL/data/'+'esnlive_train.csv')
 labels_encoding = {'contradiction':torch.Tensor([1.,0.,0.]),'neutral': torch.Tensor([0.,1.,0.]),
                    'entailment':torch.Tensor([0.,0.,1.])}
 train['gold_label']=train['gold_label'].apply(lambda label: labels_encoding[label])
-from datasets import Dataset, load_dataset, Features
+#from datasets import Dataset, load_dataset, Features
 #features = Features({k:v[0] for k,v in pd.DataFrame(train.dtypes).T.to_dict('list').items()})
-train = Dataset.from_pandas(train)
+#train = Dataset.from_pandas(train)
 """
 data_path = './e-ViL/data/'
 data_files = {

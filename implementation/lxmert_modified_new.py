@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from datasets import Dataset, load_dataset, Features
 from sklearn.model_selection import train_test_split
-from transformers import LxmertTokenizer, LxmertConfig, LxmertModel, LxmertForQuestionAnswering, PretrainedConfig
+from transformers import LxmertTokenizer, LxmertConfig, LxmertModel, LxmertForQuestionAnswering, PretrainedConfig, TrainingArguments
 from modeling_frcnn import GeneralizedRCNN
 import utils
 from processing_image import Preprocess
@@ -19,7 +19,7 @@ class MyDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         item = {'questions':self.questions[idx],'images':self.images[idx]}
         item['labels'] = self.labels[idx]
-        return item
+        return self.questions[idx], self.images[idx], self.labels[idx]
 
     def __len__(self):
         return len(self.labels)
@@ -34,8 +34,11 @@ class MyTrainer():
         self.test_dataset = MyDataset(self.test['question'].values,
                                  self.test['image'].values,
                                  self.test['label'].values)
+        self.training_arguments = TrainingArguments('./output_dir',
+                                                    per_device_train_batch_size=1
+                                                    , per_device_eval_batch_size = 1)
         self.trainer = Trainer(model=model, train_dataset=self.train_dataset, 
-                               eval_dataset=self.test_dataset)
+                               eval_dataset=self.test_dataset, args = self.training_arguments)
         
         
     def read_datasets(self):
