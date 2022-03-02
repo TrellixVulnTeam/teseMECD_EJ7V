@@ -65,7 +65,7 @@ class MyDataLoader():
         #return Dataset.from_pandas(sample_train, features = features), Dataset.from_pandas(sample_test, features = features)
         return sample_train, sample_test
     
-    def get_processed_datasets(self):
+    def get_datasets(self):
         return self.train_dataset, self.test_dataset
         
     def get_visual_features(self,images):
@@ -108,9 +108,12 @@ class MyDataLoader():
     
 class MyTrainer():
     def __init__(self,model,processed_train,processed_test):
-        self.trainer = Trainer(model=model, train_dataset=self.train_dataset, 
-                               eval_dataset=self.test_dataset)
+        self.trainer = Trainer(model=model, train_dataset=processed_train, 
+                               eval_dataset=processed_test)
     
+    def my_train(self):
+        self.trainer.train()
+        
     def train_model(self):
         #self.trainer.train()
         optim = AdamW(model.parameters(), lr=5e-5)
@@ -193,9 +196,11 @@ class Lxmert(LxmertModel):
 
 #if __name__ == "__main__":
 model = Lxmert("unc-nlp/lxmert-base-uncased")
-train, test = MyDataLoader().get_processed_datasets()
-#trainer = MyTrainer(model,train, test)
+train, test = MyDataLoader().get_datasets()
+trainer = MyTrainer(model,train, test)
+trainer.my_train()
 
+"""
 train_loader = DataLoader(train, batch_size=16, shuffle=True)
 for epoch in range(1):
     for batch in train_loader:
@@ -205,6 +210,7 @@ for epoch in range(1):
         labels = batch['labels']
         outputs = model.forward(inputs, features, normalized_boxes, labels)
         break
+"""
 
 #trainer.train_model()
 """

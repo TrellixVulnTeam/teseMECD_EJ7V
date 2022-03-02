@@ -112,4 +112,26 @@ class Lxmert(LxmertModel):
 #if __name__ == "__main__":
 model = Lxmert("unc-nlp/lxmert-base-uncased")
 output = model.run()
+train = pd.read_csv('./e-ViL/data/'+'esnlive_train.csv')
+labels_encoding = {'contradiction':torch.Tensor([1.,0.,0.]),'neutral': torch.Tensor([0.,1.,0.]),
+                   'entailment':torch.Tensor([0.,0.,1.])}
+train['gold_label']=train['gold_label'].apply(lambda label: labels_encoding[label])
+from datasets import Dataset, load_dataset, Features
+#features = Features({k:v[0] for k,v in pd.DataFrame(train.dtypes).T.to_dict('list').items()})
+train = Dataset.from_pandas(train)
+"""
+data_path = './e-ViL/data/'
+data_files = {
+    "train": data_path+'esnlive_train.csv',
+    "validation": data_path+'esnlive_dev.csv',
+    "test": data_path+'esnlive_test.csv'
+}
+dataset = load_dataset("csv", data_files=data_files)
+train=dataset["train"]
+test = dataset["test"]
+"""
+#train = load_dataset('csv', data_files=data_path+'esnlive_train.csv',split='train')
+#test = load_dataset('csv', data_files=data_path+'esnlive_test.csv',split='train')
+test = train
+model.train(train,test)
 print(output)

@@ -27,19 +27,6 @@ class MyDataset(torch.utils.data.Dataset):
     
 class MyTrainer():
     def __init__(self,model):
-        """
-        data_path = './e-ViL/data/'
-        data_files = {
-            "train": data_path+'esnlive_train.csv',
-            "validation": data_path+'esnlive_dev.csv',
-            "test": data_path+'esnlive_test.csv'
-        }
-        dataset = load_dataset("csv", data_files=data_files)
-        self.train=dataset["train"]
-        self.test = dataset["test"]
-        """
-        #self.train = load_dataset('csv', data_files=data_path+'esnlive_train.csv',split='train')
-        #self.test = load_dataset('csv', data_files=data_path+'esnlive_test.csv',split='train')
         self.train, self.test = self.read_datasets()
         self.train_dataset = MyDataset(self.train['question'].values,
                                  self.train['image'].values,
@@ -49,8 +36,6 @@ class MyTrainer():
                                  self.test['label'].values)
         self.trainer = Trainer(model=model, train_dataset=self.train_dataset, 
                                eval_dataset=self.test_dataset)
-        #self.trainer = Trainer(model=model, train_dataset=self.train, 
-        #                       eval_dataset=self.test)
         
         
     def read_datasets(self):
@@ -58,32 +43,24 @@ class MyTrainer():
         train = pd.read_csv(data_path+'esnlive_train.csv')
         labels_encoding = {'contradiction':torch.Tensor([1.,0.,0.]),'neutral': torch.Tensor([0.,1.,0.]),
                            'entailment':torch.Tensor([0.,0.,1.])}
-        """
-        labels = [0, 1, 2]
-        n_values = np.max(labels) + 1
-        np.eye(n_values)[label]
-        """
         train = train[['hypothesis','Flickr30kID','gold_label']]
         train['gold_label']=train['gold_label'].apply(lambda label: labels_encoding[label])
         train['Flickr30kID'] = train['Flickr30kID'].apply(lambda x: data_path+'flickr30k_images/flickr30k_images/'+x)
         train.rename(columns={ train.columns[0]: "question", train.columns[1]: "image",
                               train.columns[2]: "label" }, inplace = True)
-        features = Features({k:v[0] for k,v in pd.DataFrame(train.dtypes).T.to_dict('list').items()})
         sample = train.sample(n=4, random_state=1)
         sample_train, sample_test = train_test_split(sample, test_size=0.2)
         sample_train.reset_index(inplace=True,drop=True)
         sample_test.reset_index(inplace=True,drop=True)
+        #features = Features({k:v[0] for k,v in pd.DataFrame(train.dtypes).T.to_dict('list').items()})
         #return Dataset.from_pandas(sample_train), Dataset.from_pandas(sample_test)
         #return Dataset.from_pandas(sample_train, features = features), Dataset.from_pandas(sample_test, features = features)
         return sample_train, sample_test
-    
-    def get_datasets(self):
-        return self.train, self.test
-    
-    def get_data(self):
-        return self.train_dataset, self.test_dataset
-    
-    def train_model(self):
+        
+    def my_train(self):
+        self.trainer.train()
+        
+    def train_model(self,model):
         #self.trainer.train()
         optim = AdamW(model.parameters(), lr=5e-5)
         train_loader = DataLoader(self.train_dataset, batch_size=16, shuffle=True)
@@ -114,15 +91,15 @@ class MyTrainer():
         
     
 class Lxmert(LxmertModel):
-    def __init__(self,config,numb_labels=3):
-        super().__init__(LxmertConfig.from_pretrained(config))
+    def __init__(self,numb_labels=3):
+        super().__init__(LxmertConfig.from_pretrained("unc-nlp/lxmert-base-uncased"))
         self.lxmert_tokenizer = LxmertTokenizer.from_pretrained("unc-nlp/lxmert-base-uncased")
         self.rcnn_cfg = utils.Config.from_pretrained("unc-nlp/frcnn-vg-finetuned")
         self.rcnn = GeneralizedRCNN.from_pretrained("unc-nlp/frcnn-vg-finetuned", config=self.rcnn_cfg)
         self.image_preprocess = Preprocess(self.rcnn_cfg)
         #self.lxmert = LxmertModel.from_pretrained("unc-nlp/lxmert-base-uncased")
-        self.new_encoder_layer = torch.nn.TransformerEncoderLayer(d_model=768, nhead=8)
-        self.new_transformer_encoder = torch.nn.TransformerEncoder(self.new_encoder_layer, num_layers=3)
+        #self.new_encoder_layer = torch.nn.TransformerEncoderLayer(d_model=768, nhead=8)
+        #self.new_transformer_encoder = torch.nn.TransformerEncoder(self.new_encoder_layer, num_layers=3)
         #
         self.config.problem_type = "multi_label_classification"
         self.classification = torch.nn.Linear(self.config.hidden_size, numb_labels)
@@ -212,8 +189,9 @@ class Lxmert(LxmertModel):
         
 
 #if __name__ == "__main__":
-model = Lxmert("unc-nlp/lxmert-base-uncased")
+model = Lxmert()
 trainer = MyTrainer(model)
+trainer.my_train()
 """
 train, test = trainer.get_data()
 train_loader = DataLoader(train, batch_size=16, shuffle=True)
@@ -225,7 +203,8 @@ for epoch in range(1):
         outputs = model.forward(questions,images,labels)
         break
 """
-trainer.train_model()
+
+
 """
 train,test  = trainer.get_datasets()
 output = model.run(train)
