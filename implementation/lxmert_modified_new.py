@@ -104,11 +104,21 @@ class Lxmert(LxmertModel):
         #self.new_encoder_layer = torch.nn.TransformerEncoderLayer(d_model=768, nhead=8)
         #self.new_transformer_encoder = torch.nn.TransformerEncoder(self.new_encoder_layer, num_layers=3)
         #
-        self.config.problem_type = "multi_label_classification"
+        self.config.problem_type = "single_label_classification"
         self.classification = torch.nn.Linear(self.config.hidden_size, numb_labels)
         self.num_labels = numb_labels
         # don't forget to init the weights for the new layers
         #self.init_weights()
+        if self.config.problem_type == "multi_label_classification":
+          self.loss_fct = torch.nn.BCEWithLogitsLoss()
+          self.output_loss = lambda output,labels : self.loss_fct(output.logits, labels)
+        elif self.config.problem_type == "regression":
+          self.loss_fct = torch.nn.MSELoss()
+          if self.num_labels == 1: self.output_loss = lambda output,labels : self.loss_fct(output.logits.squeeze(), labels.squeeze())
+          else: self.output_loss =  lambda output,labels : self.loss_fct(output.logits, labels)
+        elif self.config.problem_type == "single_label_classification":
+          self.loss_fct = torch.nn.CrossEntropyLoss()
+          self.output_loss = lambda output,labels : self.loss_fct(output.logits.view(-1, self.num_labels), labels.view(-1)) 
     
     def forward(self,text,img, labels):
         # run lxmert
@@ -167,18 +177,7 @@ class Lxmert(LxmertModel):
         aux = self.classification(output.pooled_output[0])
         output.logits = aux
         output.loss = None
-        
-        
-        if self.config.problem_type == "multi_label_classification":
-          loss_fct = torch.nn.BCEWithLogitsLoss()
-          output.loss = loss_fct(output.logits, labels)
-        elif self.config.problem_type == "regression":
-          loss_fct = torch.nn.MSELoss()
-          if self.num_labels == 1: output.loss = loss_fct(output.logits.squeeze(), labels.squeeze())
-          else: output.loss = loss_fct(output.logits, labels)
-        elif self.config.problem_type == "single_label_classification":
-          loss_fct = torch.nn.CrossEntropyLoss()
-          output.loss = loss_fct(output.logits.view(-1, self.num_labels), labels.view(-1)) 
+        output.loss = self.output_loss(output, labels)
         return output
         
         
