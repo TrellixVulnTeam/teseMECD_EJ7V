@@ -74,7 +74,7 @@ class MyTrainer():
         for epoch in range(1):
             print(epoch)
             k=0
-            for batch in train_loader:
+            for items in train_loader:
                 print(k)
                 k+=1
                 print("zerograd")
@@ -84,9 +84,8 @@ class MyTrainer():
                 #text = batch['text']
                 #image = batch['img']
                 #label = batch['label']
-                item = None
                 print("outputs")
-                outputs = model.forward(item)
+                outputs = model.forward(items)
                 #outputs = model.forward(text,image,label)
                 #outputs = model(input_ids, attention_mask=attention_mask, labels=labels)
                 loss = outputs.loss#[0]
@@ -128,9 +127,9 @@ class Lxmert(LxmertModel):
     
     def forward(self,item):
         # run lxmert
-        text = item.text
-        img = item.img
-        label = item.label
+        text = item['text']
+        img = item['img']
+        label = item['label']
         
         images, sizes, scales_yx = self.image_preprocess(img)
         
