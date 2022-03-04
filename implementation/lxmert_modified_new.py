@@ -39,33 +39,10 @@ class MyTrainer():
                                                     , per_device_eval_batch_size = 1,
                                                     no_cuda = True)
                                                     #,data_collator = self.collate_fn)
+        self.model = model
         self.trainer = Trainer(args = self.training_arguments,
-                               model=model, train_dataset=self.train_dataset, 
+                               model=self.model, train_dataset=self.train_dataset, 
                                eval_dataset=self.test_dataset)
-    """
-    def collate_fn(batch):
-
-        text, img, label = [], [], []
-
-        for example in batch:
-            text.append(example[0])
-            img.append(example[1])
-            label.append(example[2])
-
-        max_len = max(map(lambda x: x.shape[0], feats))
-        padded_feats = [pad_array(x, max_len) for x in feats]
-        padded_boxes = [pad_array(x, max_len) for x in boxes]
-
-        return (
-            ques_id,
-            torch.tensor(padded_feats).float(),
-            torch.tensor(padded_boxes).float(),
-            tuple(sent),
-            torch.tensor(target),
-            tuple(expl),
-            answers,
-        )
-    """
     
     def read_datasets(self):
         data_path = './e-ViL/data/'
@@ -91,10 +68,9 @@ class MyTrainer():
     def my_train(self):
         self.trainer.train()
         
-    def train_model(self,model):
-        #self.trainer.train()
-        optim = AdamW(model.parameters(), lr=5e-5)
-        train_loader = DataLoader(self.train_dataset, batch_size=16, shuffle=True)
+    def train_model(self):
+        optim = AdamW(self.model.parameters(), lr=5e-5)
+        train_loader = DataLoader(self.train_dataset, batch_size=1, shuffle=True)
         for epoch in range(1):
             print(epoch)
             k=0
@@ -105,19 +81,21 @@ class MyTrainer():
                 optim.zero_grad()
                 #input_ids = batch['input_ids']
                 #attention_mask = batch['attention_mask']
-                questions = batch['questions']
-                images = batch['images']
-                labels = batch['labels']
+                #text = batch['text']
+                #image = batch['img']
+                #label = batch['label']
+                item = None
                 print("outputs")
-                outputs = model.forward(questions,images,labels)
+                outputs = model.forward(item)
+                #outputs = model.forward(text,image,label)
                 #outputs = model(input_ids, attention_mask=attention_mask, labels=labels)
-                loss = outputs[0]
+                loss = outputs.loss#[0]
                 print("backward")
                 loss.backward()
                 print("optim")
                 optim.step()
-        model.eval()
-        model.save_pretrained("my_model")
+        self.model.eval()
+        self.model.save_pretrained("my_model")
         return 
         
     
@@ -211,7 +189,8 @@ class Lxmert(LxmertModel):
 #if __name__ == "__main__":
 model = Lxmert()
 trainer = MyTrainer(model)
-trainer.my_train()
+#trainer.my_train()
+trainer.train_model()
 """
 train, test = trainer.get_data()
 train_loader = DataLoader(train, batch_size=16, shuffle=True)
