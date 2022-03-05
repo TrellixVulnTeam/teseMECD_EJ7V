@@ -34,21 +34,11 @@ class MyTrainer():
         self.test_dataset = MyDataset(self.test['question'].values,
                                  self.test['image'].values,
                                  self.test['label'].values)
-        self.training_arguments = TrainingArguments('./output_dir',
-                                                    per_device_train_batch_size=1
-                                                    , per_device_eval_batch_size = 1,
-                                                    no_cuda = True)
-                                                    #,data_collator = self.collate_fn)
         self.model = model
-        self.trainer = Trainer(args = self.training_arguments,
-                               model=self.model, train_dataset=self.train_dataset, 
-                               eval_dataset=self.test_dataset)
     
     def read_datasets(self):
         data_path = './e-ViL/data/'
         train = pd.read_csv(data_path+'esnlive_train.csv')
-        #labels_encoding = {'contradiction':torch.Tensor([1.,0.,0.]),'neutral': torch.Tensor([0.,1.,0.]),
-        #                   'entailment':torch.Tensor([0.,0.,1.])}
         labels_encoding = {'contradiction':0,'neutral': 1,
                            'entailment':2}
         train = train[['hypothesis','Flickr30kID','gold_label']]
@@ -60,9 +50,6 @@ class MyTrainer():
         sample_train, sample_test = train_test_split(sample, test_size=0.2)
         sample_train.reset_index(inplace=True,drop=True)
         sample_test.reset_index(inplace=True,drop=True)
-        #features = Features({k:v[0] for k,v in pd.DataFrame(train.dtypes).T.to_dict('list').items()})
-        #return Dataset.from_pandas(sample_train), Dataset.from_pandas(sample_test)
-        #return Dataset.from_pandas(sample_train, features = features), Dataset.from_pandas(sample_test, features = features)
         return sample_train, sample_test
         
     def my_train(self):
@@ -72,26 +59,11 @@ class MyTrainer():
         optim = AdamW(self.model.parameters(), lr=5e-5)
         train_loader = DataLoader(self.train_dataset, batch_size=1, shuffle=True)
         for epoch in range(1):
-            print(epoch)
-            k=0
             for items in train_loader:
-                print(k)
-                k+=1
-                print("zerograd")
                 optim.zero_grad()
-                #input_ids = batch['input_ids']
-                #attention_mask = batch['attention_mask']
-                #text = batch['text']
-                #image = batch['img']
-                #label = batch['label']
-                print("outputs")
                 outputs = model.forward(items)
-                #outputs = model.forward(text,image,label)
-                #outputs = model(input_ids, attention_mask=attention_mask, labels=labels)
                 loss = outputs.loss#[0]
-                print("backward")
                 loss.backward()
-                print("optim")
                 optim.step()
         self.model.eval()
         self.model.save_pretrained("my_model")
@@ -105,15 +77,9 @@ class Lxmert(LxmertModel):
         self.rcnn_cfg = utils.Config.from_pretrained("unc-nlp/frcnn-vg-finetuned")
         self.rcnn = GeneralizedRCNN.from_pretrained("unc-nlp/frcnn-vg-finetuned", config=self.rcnn_cfg)
         self.image_preprocess = Preprocess(self.rcnn_cfg)
-        #self.lxmert = LxmertModel.from_pretrained("unc-nlp/lxmert-base-uncased")
-        #self.new_encoder_layer = torch.nn.TransformerEncoderLayer(d_model=768, nhead=8)
-        #self.new_transformer_encoder = torch.nn.TransformerEncoder(self.new_encoder_layer, num_layers=3)
-        #
         self.config.problem_type = "single_label_classification"
         self.classification = torch.nn.Linear(self.config.hidden_size, numb_labels)
         self.num_labels = numb_labels
-        # don't forget to init the weights for the new layers
-        #self.init_weights()
         if self.config.problem_type == "multi_label_classification":
           self.loss_fct = torch.nn.BCEWithLogitsLoss()
           self.output_loss = lambda output,labels : self.loss_fct(output.logits, labels)
@@ -124,8 +90,11 @@ class Lxmert(LxmertModel):
         elif self.config.problem_type == "single_label_classification":
           self.loss_fct = torch.nn.CrossEntropyLoss()
           self.output_loss = lambda output,labels : self.loss_fct(output.logits.view(-1, self.num_labels), labels.view(-1)) 
-    
+        # don't forget to init the weights for the new layers
+        self.init_weights()
+        
     def forward(self,item):
+        print(item)
         # run lxmert
         text = item['text']
         img = item['img']
@@ -174,15 +143,22 @@ class Lxmert(LxmertModel):
         output.loss = None
         output.loss = self.output_loss(output, label)
         return output
-        
-        
-    def run(self,dataset):
-        img_path = dataset.loc[5,'image']#"32542645.jpg"
-        question = dataset.loc[5,'question']#"How many people are in the image?"
-        label = dataset.loc[5,'label']
-        #print(self.forward(question,img_path))
-        #self.train(sample_train,sample_test)
-        return self.forward(question,img_path,label)
+    
+    def run(self):
+        data_path = './e-ViL/data/'
+        train = pd.read_csv(data_path+'esnlive_train.csv')
+        labels_encoding = {'contradiction':0,'neutral': 1,
+                           'entailment':2}
+        train['gold_label']=train['gold_label'].apply(lambda label: labels_encoding[label])
+        img_path = data_path+'flickr30k_images/flickr30k_images/'+ train.loc[50,'Flickr30kID']#"32542645.jpg"
+        question = train.loc[50,'hypothesis'] #"How many people are in the image?"
+        label = train.loc[50,'gold_label']
+        item = {'text':[question], 'img':[img_path], 'label':torch.LongTensor([label])}
+        output = self.forward(item)
+        m = torch.nn.Softmax(dim=0)
+        probs = m(output.logits)
+        print(probs)
+        return output
         
 
 #if __name__ == "__main__":
@@ -190,21 +166,4 @@ model = Lxmert()
 trainer = MyTrainer(model)
 #trainer.my_train()
 trainer.train_model()
-"""
-train, test = trainer.get_data()
-train_loader = DataLoader(train, batch_size=16, shuffle=True)
-for epoch in range(1):
-    for batch in train_loader:
-        questions = batch['questions']
-        images = batch['images']
-        labels = batch['labels']
-        outputs = model.forward(questions,images,labels)
-        break
-"""
-
-
-"""
-train,test  = trainer.get_datasets()
-output = model.run(train)
-print(output)
-"""
+output = model.run()
