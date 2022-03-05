@@ -20,8 +20,8 @@ class MyDataset(torch.utils.data.Dataset):
     
     def __getitem__(self, idx):
         item = {'inputs':self.inputs[idx],'features':self.features[idx],
-                'normalized_boxes': self.normalized_boxes[idx]}
-        item['labels'] = self.labels[idx]
+                'normalized_boxes': self.normalized_boxes[idx],
+                'label': self.labels[idx]}
         return item
 
     def __len__(self):
@@ -46,27 +46,24 @@ class MyDataLoader():
                                  self.test['label'].values)
         return
     
-    def read_datasets(self,data_path='./e-ViL/data/'):
+    def read_datasets(self):
+        data_path = './e-ViL/data/'
         train = pd.read_csv(data_path+'esnlive_train.csv')
-        labels_encoding = {'contradiction':torch.Tensor([1.,0.,0.]),'neutral': torch.Tensor([0.,1.,0.]),
-                           'entailment':torch.Tensor([0.,0.,1.])}
-
+        labels_encoding = {'contradiction':0,'neutral': 1,
+                           'entailment':2}
         train = train[['hypothesis','Flickr30kID','gold_label']]
         train['gold_label']=train['gold_label'].apply(lambda label: labels_encoding[label])
         train['Flickr30kID'] = train['Flickr30kID'].apply(lambda x: data_path+'flickr30k_images/flickr30k_images/'+x)
         train.rename(columns={ train.columns[0]: "question", train.columns[1]: "image",
                               train.columns[2]: "label" }, inplace = True)
-        #features = Features({k:v[0] for k,v in pd.DataFrame(train.dtypes).T.to_dict('list').items()})
         sample = train.sample(n=4, random_state=1)
         sample_train, sample_test = train_test_split(sample, test_size=0.2)
         sample_train.reset_index(inplace=True,drop=True)
         sample_test.reset_index(inplace=True,drop=True)
-        #return Dataset.from_pandas(sample_train), Dataset.from_pandas(sample_test)
-        #return Dataset.from_pandas(sample_train, features = features), Dataset.from_pandas(sample_test, features = features)
         return sample_train, sample_test
     
     def get_datasets(self):
-        return self.train_dataset, self.test_dataset
+        return self.train_dataset, self.test_dataset 
         
     def get_visual_features(self,images):
         #preprocess image
@@ -83,7 +80,7 @@ class MyDataLoader():
         #Very important that the boxes are normalized
         normalized_boxes = output_dict.get("normalized_boxes")
         features = output_dict.get("roi_features")
-        return normalized_boxes, features
+        return [normalized_boxes, features]
     
     def get_text_features(self,text): 
         #preprocess text
@@ -108,67 +105,60 @@ class MyDataLoader():
     
 class MyTrainer():
     def __init__(self,model,processed_train,processed_test):
-        self.training_arguments = TrainingArguments('./output_dir',
-                                                    per_device_train_batch_size=1
-                                                    , per_device_eval_batch_size = 1,
-                                                    no_cuda = True)
-        self.trainer = Trainer(model=model, train_dataset=processed_train, 
-                               eval_dataset=processed_test)
-        
+        self.model = model
+        self.train = processed_train
+        self.test = processed_test        
     
-    def my_train(self):
-        self.trainer.train()
-        
-    def train_model(self):
-        #self.trainer.train()
-        optim = AdamW(model.parameters(), lr=5e-5)
-        train_loader = DataLoader(self.train_dataset, batch_size=16, shuffle=True)
+    def train_model(self,epochs=1):
+        optim = AdamW(self.model.parameters(), lr=5e-5)
+        train_loader = DataLoader(self.train, batch_size=1, shuffle=True)
         for epoch in range(1):
-            print(epoch)
-            k=0
-            for batch in train_loader:
-                print(k)
-                k+=1
-                print("zerograd")
+            for item in train_loader:
                 optim.zero_grad()
-                #input_ids = batch['input_ids']
-                #attention_mask = batch['attention_mask']
-                questions = batch['questions']
-                images = batch['images']
-                labels = batch['labels']
-                print("outputs")
-                outputs = model.forward(questions,images,labels)
-                #outputs = model(input_ids, attention_mask=attention_mask, labels=labels)
-                loss = outputs[0]
-                print("backward")
+                outputs = self.model.forward(item)
+                loss = outputs.loss#[0]
                 loss.backward()
-                print("optim")
                 optim.step()
-        model.eval()
-        model.save_pretrained("my_model")
+        self.model.eval()
+        self.model.save_pretrained("my_model")
         return 
         
     
 class Lxmert(LxmertModel):
-    def __init__(self,config,numb_labels=3):
-        super().__init__(LxmertConfig.from_pretrained(config))
-        #self.lxmert = LxmertModel.from_pretrained("unc-nlp/lxmert-base-uncased")
-        self.new_encoder_layer = torch.nn.TransformerEncoderLayer(d_model=768, nhead=8)
-        self.new_transformer_encoder = torch.nn.TransformerEncoder(self.new_encoder_layer, num_layers=3)
-        #
-        self.config.problem_type = "multi_label_classification"
+    def __init__(self,numb_labels=3):
+        super().__init__(LxmertConfig.from_pretrained("unc-nlp/lxmert-base-uncased"))
+        self.config.problem_type = "single_label_classification"
         self.classification = torch.nn.Linear(self.config.hidden_size, numb_labels)
         self.num_labels = numb_labels
+        if self.config.problem_type == "multi_label_classification":
+          self.loss_fct = torch.nn.BCEWithLogitsLoss()
+          self.output_loss = lambda output,labels : self.loss_fct(output.logits, labels)
+        elif self.config.problem_type == "regression":
+          self.loss_fct = torch.nn.MSELoss()
+          if self.num_labels == 1: self.output_loss = lambda output,labels : self.loss_fct(output.logits.squeeze(), labels.squeeze())
+          else: self.output_loss =  lambda output,labels : self.loss_fct(output.logits, labels)
+        elif self.config.problem_type == "single_label_classification":
+          self.loss_fct = torch.nn.CrossEntropyLoss()
+          self.output_loss = lambda output,labels : self.loss_fct(output.logits.view(-1, self.num_labels), labels.view(-1)) 
         # don't forget to init the weights for the new layers
-        #self.init_weights()
+        self.init_weights()
     
-    def forward(self,inputs, features, normalized_boxes, labels):
+    def forward(self,item):
+        print(item)
+        inputs = item['inputs']
+        input_ids = inputs['input_ids'][0]
+        attention_mask=inputs['attention_mask'][0]
+        token_type_ids=inputs['token_type_ids'][0]
+        features = item['features'][0]
+        normalized_boxes = item['normalized_boxes'][0]
+        
+        label = item['label'][0]
         output = super().forward(
-            input_ids=inputs['input_ids'],
-            attention_mask=inputs['attention_mask'],
+            input_ids=input_ids,
+            attention_mask=attention_mask,
             visual_feats=features,
             visual_pos=normalized_boxes,
-            token_type_ids=inputs['token_type_ids'],
+            token_type_ids=token_type_ids,
             return_dict=True,
             output_attentions=False,
         )
@@ -176,49 +166,66 @@ class Lxmert(LxmertModel):
         aux = self.classification(output.pooled_output[0])
         output.logits = aux
         output.loss = None
-        
-        if self.config.problem_type == "multi_label_classification":
-          loss_fct = torch.nn.BCEWithLogitsLoss()
-          output.loss = loss_fct(output.logits, labels)
-        elif self.config.problem_type == "regression":
-          loss_fct = torch.nn.MSELoss()
-          if self.num_labels == 1: output.loss = loss_fct(output.logits.squeeze(), labels.squeeze())
-          else: output.loss = loss_fct(output.logits, labels)
-        elif self.config.problem_type == "single_label_classification":
-          loss_fct = torch.nn.CrossEntropyLoss()
-          output.loss = loss_fct(output.logits.view(-1, self.num_labels), labels.view(-1)) 
+        output.loss = self.output_loss(output, label)
         return output
         
         
-    def run(self,dataset):
-        img_path = dataset.loc[5,'image']#"32542645.jpg"
-        question = dataset.loc[5,'question']#"How many people are in the image?"
-        label = dataset.loc[5,'label']
-        #print(self.forward(question,img_path))
-        #self.train(sample_train,sample_test)
-        return self.forward(question,img_path,label)
+    def run(self):
+        data_path = './e-ViL/data/'
+        train = pd.read_csv(data_path+'esnlive_train.csv')
+        labels_encoding = {'contradiction':0,'neutral': 1,
+                           'entailment':2}
+        train['gold_label']=train['gold_label'].apply(lambda label: labels_encoding[label])
+        img_path = data_path+'flickr30k_images/flickr30k_images/'+ train.loc[50,'Flickr30kID']#"32542645.jpg"
+        question = train.loc[50,'hypothesis'] #"How many people are in the image?"
+        label = train.loc[50,'gold_label']
+        
+        lxmert_tokenizer = LxmertTokenizer.from_pretrained("unc-nlp/lxmert-base-uncased")
+        rcnn_cfg = utils.Config.from_pretrained("unc-nlp/frcnn-vg-finetuned")
+        rcnn = GeneralizedRCNN.from_pretrained("unc-nlp/frcnn-vg-finetuned", config=rcnn_cfg)
+        image_preprocess = Preprocess(rcnn_cfg)
+        
+        images, sizes, scales_yx = image_preprocess(img_path)
+        
+        #preprocess image
+        output_dict = rcnn(
+            images, 
+            sizes, 
+            scales_yx=scales_yx, 
+            padding="max_detections",
+            max_detections=rcnn_cfg.max_detections,
+            return_tensors="pt"
+        )
+        
+        #preprocess text
+        inputs = lxmert_tokenizer(
+            question,
+            padding="max_length",
+            max_length=20,
+            truncation=True,
+            return_token_type_ids=True,
+            return_attention_mask=True,
+            add_special_tokens=True,
+            return_tensors="pt"
+        )
+        
+        #Very important that the boxes are normalized
+        normalized_boxes = output_dict.get("normalized_boxes")
+        features = output_dict.get("roi_features")
+        item = {'inputs':inputs,
+                'features':features, 
+                'normalized_boxes':normalized_boxes, 
+                'label':torch.LongTensor([label])}
+        output = self.forward(item)
+        m = torch.nn.Softmax(dim=0)
+        probs = m(output.logits)
+        print(probs)
+        return output
         
 
 #if __name__ == "__main__":
-model = Lxmert("unc-nlp/lxmert-base-uncased")
-train, test = MyDataLoader().get_datasets()
-trainer = MyTrainer(model,train, test)
-trainer.my_train()
-
-"""
-train_loader = DataLoader(train, batch_size=16, shuffle=True)
-for epoch in range(1):
-    for batch in train_loader:
-        inputs = batch['inputs']
-        features= batch['features']
-        normalized_boxes = batch['normalized_boxes']
-        labels = batch['labels']
-        outputs = model.forward(inputs, features, normalized_boxes, labels)
-        break
-"""
-
+model = Lxmert()
+#train, test = MyDataLoader().get_datasets()
+#trainer = MyTrainer(model,train, test)
 #trainer.train_model()
-"""
-output = model.run(train)
-print(output)
-"""
+output = model.run()

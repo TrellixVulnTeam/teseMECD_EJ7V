@@ -59,9 +59,9 @@ class MyTrainer():
         optim = AdamW(self.model.parameters(), lr=5e-5)
         train_loader = DataLoader(self.train_dataset, batch_size=1, shuffle=True)
         for epoch in range(1):
-            for items in train_loader:
+            for item in train_loader:
                 optim.zero_grad()
-                outputs = model.forward(items)
+                outputs = model.forward(item)
                 loss = outputs.loss#[0]
                 loss.backward()
                 optim.step()
@@ -94,7 +94,6 @@ class Lxmert(LxmertModel):
         self.init_weights()
         
     def forward(self,item):
-        print(item)
         # run lxmert
         text = item['text']
         img = item['img']
@@ -124,9 +123,12 @@ class Lxmert(LxmertModel):
             return_tensors="pt"
         )
         
+        print(inputs)
         #Very important that the boxes are normalized
         normalized_boxes = output_dict.get("normalized_boxes")
         features = output_dict.get("roi_features")
+        print(normalized_boxes)
+        print(features)
         
         output = super().forward(
             input_ids=inputs.input_ids,
