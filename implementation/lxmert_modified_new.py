@@ -46,7 +46,7 @@ class MyTrainer():
         train['Flickr30kID'] = train['Flickr30kID'].apply(lambda x: data_path+'flickr30k_images/flickr30k_images/'+x)
         train.rename(columns={ train.columns[0]: "question", train.columns[1]: "image",
                               train.columns[2]: "label" }, inplace = True)
-        sample = train.sample(n=4, random_state=1)
+        sample = train.sample(n=30, random_state=1)
         sample_train, sample_test = train_test_split(sample, test_size=0.2)
         sample_train.reset_index(inplace=True,drop=True)
         sample_test.reset_index(inplace=True,drop=True)
@@ -141,10 +141,10 @@ class Lxmert(LxmertModel):
         return output
     
     def save_model(self,path):
-        self.save_pretrained(path)
+        torch.save(self.state_dict(), path)
         
     def load_model(self,path):
-        self = LxmertModel.from_pretrained(path)
+        self.load_state_dict(torch.load(path))
         
     def run(self):
         data_path = './e-ViL/data/'
@@ -180,12 +180,15 @@ class Lxmert(LxmertModel):
         
 
 #if __name__ == "__main__":
-task = 'test'
+task = 'train'
+#task = 'test'
 if task =='train':
     model = Lxmert()
     trainer = MyTrainer(model)
     trainer.train_model()
     model.save_model("my_model")
+    output = model.run()
 elif task =='test':
-    model = Lxmert.from_pretrained("my_model")
+    model = Lxmert()
+    model.load_model("my_model")
     output = model.run()

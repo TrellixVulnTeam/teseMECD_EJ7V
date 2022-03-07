@@ -8,4 +8,5 @@ books/
 **/my-model/**
 **/datasets/**
 **/output_dir/**
-
+**/tmp_trainer/**
+**/my_model
