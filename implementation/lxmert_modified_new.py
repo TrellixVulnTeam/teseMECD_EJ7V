@@ -91,10 +91,8 @@ class Lxmert(LxmertModel):
         self.init_weights()
         
     def forward(self,item):
-        #print(item)
         # run lxmert
         text = item['text']
-        #print(text)
         img = item['img']
         label = item['label']
         
@@ -122,18 +120,9 @@ class Lxmert(LxmertModel):
             return_tensors="pt"
         )
         
-        #print(inputs)
-        #print(inputs.input_ids.shape)
-        #print(inputs.attention_mask.shape)
-        #print(inputs.token_type_ids.shape)
-        
         #Very important that the boxes are normalized
         normalized_boxes = output_dict.get("normalized_boxes")
         features = output_dict.get("roi_features")
-        #print(normalized_boxes)
-        #print(features)
-        #print(normalized_boxes.shape)
-        #print(features.shape)
         
         output = super().forward(
             input_ids=inputs.input_ids,
@@ -145,13 +134,9 @@ class Lxmert(LxmertModel):
             output_attentions=False,
         )
         
-        #print(output.pooled_output.shape)
-                
         aux = self.classification(output.pooled_output)
         output.logits = aux
         output.loss = None
-        #print(output.logits)#.view(-1, self.num_labels))
-        #print(label)#.view(-1))
         output.loss = self.output_loss(output, label)
         return output
     
@@ -159,7 +144,7 @@ class Lxmert(LxmertModel):
         self.save_pretrained(path)
         
     def load_model(self,path):
-        self.model = LxmertModel.from_pretrained(path)
+        self = LxmertModel.from_pretrained(path)
         
     def run(self):
         data_path = './e-ViL/data/'
@@ -195,12 +180,12 @@ class Lxmert(LxmertModel):
         
 
 #if __name__ == "__main__":
-model = Lxmert()
 task = 'test'
 if task =='train':
+    model = Lxmert()
     trainer = MyTrainer(model)
     trainer.train_model()
     model.save_model("my_model")
 elif task =='test':
-    model.load_model("my_model")
+    model = Lxmert.from_pretrained("my_model")
     output = model.run()
