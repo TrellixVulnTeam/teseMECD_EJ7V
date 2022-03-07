@@ -51,10 +51,7 @@ class MyTrainer():
         sample_train.reset_index(inplace=True,drop=True)
         sample_test.reset_index(inplace=True,drop=True)
         return sample_train, sample_test
-        
-    def my_train(self):
-        self.trainer.train()
-        
+                
     def train_model(self):
         optim = AdamW(self.model.parameters(), lr=5e-5)
         train_loader = DataLoader(self.train_dataset, batch_size=2, shuffle=True)
@@ -66,7 +63,6 @@ class MyTrainer():
                 loss.backward()
                 optim.step()
         self.model.eval()
-        self.model.save_pretrained("my_model")
         return 
         
     
@@ -159,26 +155,52 @@ class Lxmert(LxmertModel):
         output.loss = self.output_loss(output, label)
         return output
     
+    def save_model(self,path):
+        self.save_pretrained(path)
+        
+    def load_model(self,path):
+        self.model = LxmertModel.from_pretrained(path)
+        
     def run(self):
         data_path = './e-ViL/data/'
         train = pd.read_csv(data_path+'esnlive_train.csv')
         labels_encoding = {'contradiction':0,'neutral': 1,
                            'entailment':2}
         train['gold_label']=train['gold_label'].apply(lambda label: labels_encoding[label])
-        img_path = data_path+'flickr30k_images/flickr30k_images/'+ train.loc[50,'Flickr30kID']#"32542645.jpg"
-        question = train.loc[50,'hypothesis'] #"How many people are in the image?"
-        label = train.loc[50,'gold_label']
-        item = {'text':[question], 'img':[img_path], 'label':torch.LongTensor([label])}
-        output = self.forward(item)
-        m = torch.nn.Softmax(dim=0)
+        img_path1 = data_path+'flickr30k_images/flickr30k_images/'+ train.loc[50,'Flickr30kID']#"32542645.jpg"
+        question1 = train.loc[50,'hypothesis'] #"How many people are in the image?"
+        label1 = train.loc[50,'gold_label']
+        print('SAMPLE1')
+        print(img_path1,question1,label1)
+        item1 = {'text':[question1], 'img':[img_path1], 'label':torch.LongTensor([label1])}
+        output = self.forward(item1)
+        print(output.logits)
+        m = torch.nn.Softmax(dim=1)
         probs = m(output.logits)
         print(probs)
+        img_path2 = data_path+'flickr30k_images/flickr30k_images/'+ train.loc[51,'Flickr30kID']#"32542645.jpg"
+        question2 = train.loc[51,'hypothesis'] #"How many people are in the image?"
+        label2 = train.loc[51,'gold_label']
+        print('SAMPLE2')
+        print(img_path2,question2,label2)
+        item2 = {'text':[question1,question2], 'img':[img_path1,img_path2], 
+                'label':torch.LongTensor([label1,label2])}
+        output = self.forward(item2)
+        print(output.logits)
+        m = torch.nn.Softmax(dim=1)
+        probs = m(output.logits)
+        print(probs)
+        
         return output
         
 
 #if __name__ == "__main__":
 model = Lxmert()
-trainer = MyTrainer(model)
-#trainer.my_train()
-trainer.train_model()
-output = model.run()
+task = 'test'
+if task =='train':
+    trainer = MyTrainer(model)
+    trainer.train_model()
+    model.save_model("my_model")
+elif task =='test':
+    model.load_model("my_model")
+    output = model.run()
