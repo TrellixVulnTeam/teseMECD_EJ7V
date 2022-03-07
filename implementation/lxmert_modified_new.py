@@ -57,7 +57,7 @@ class MyTrainer():
         
     def train_model(self):
         optim = AdamW(self.model.parameters(), lr=5e-5)
-        train_loader = DataLoader(self.train_dataset, batch_size=1, shuffle=True)
+        train_loader = DataLoader(self.train_dataset, batch_size=2, shuffle=True)
         for epoch in range(1):
             for item in train_loader:
                 optim.zero_grad()
@@ -80,22 +80,25 @@ class Lxmert(LxmertModel):
         self.config.problem_type = "single_label_classification"
         self.classification = torch.nn.Linear(self.config.hidden_size, numb_labels)
         self.num_labels = numb_labels
-        if self.config.problem_type == "multi_label_classification":
-          self.loss_fct = torch.nn.BCEWithLogitsLoss()
-          self.output_loss = lambda output,labels : self.loss_fct(output.logits, labels)
+        
+        if self.config.problem_type == "single_label_classification":
+          self.loss_fct = torch.nn.CrossEntropyLoss()
+          self.output_loss = lambda output,labels : self.loss_fct(output.logits.view(-1, self.num_labels), labels.view(-1)) 
         elif self.config.problem_type == "regression":
           self.loss_fct = torch.nn.MSELoss()
           if self.num_labels == 1: self.output_loss = lambda output,labels : self.loss_fct(output.logits.squeeze(), labels.squeeze())
           else: self.output_loss =  lambda output,labels : self.loss_fct(output.logits, labels)
-        elif self.config.problem_type == "single_label_classification":
-          self.loss_fct = torch.nn.CrossEntropyLoss()
-          self.output_loss = lambda output,labels : self.loss_fct(output.logits.view(-1, self.num_labels), labels.view(-1)) 
+        elif self.config.problem_type == "multi_label_classification":
+          self.loss_fct = torch.nn.BCEWithLogitsLoss()
+          self.output_loss = lambda output,labels : self.loss_fct(output.logits, labels)
         # don't forget to init the weights for the new layers
         self.init_weights()
         
     def forward(self,item):
+        #print(item)
         # run lxmert
         text = item['text']
+        #print(text)
         img = item['img']
         label = item['label']
         
@@ -123,12 +126,18 @@ class Lxmert(LxmertModel):
             return_tensors="pt"
         )
         
-        print(inputs)
+        #print(inputs)
+        #print(inputs.input_ids.shape)
+        #print(inputs.attention_mask.shape)
+        #print(inputs.token_type_ids.shape)
+        
         #Very important that the boxes are normalized
         normalized_boxes = output_dict.get("normalized_boxes")
         features = output_dict.get("roi_features")
-        print(normalized_boxes)
-        print(features)
+        #print(normalized_boxes)
+        #print(features)
+        #print(normalized_boxes.shape)
+        #print(features.shape)
         
         output = super().forward(
             input_ids=inputs.input_ids,
@@ -139,10 +148,14 @@ class Lxmert(LxmertModel):
             return_dict=True,
             output_attentions=False,
         )
+        
+        #print(output.pooled_output.shape)
                 
-        aux = self.classification(output.pooled_output[0])
+        aux = self.classification(output.pooled_output)
         output.logits = aux
         output.loss = None
+        #print(output.logits)#.view(-1, self.num_labels))
+        #print(label)#.view(-1))
         output.loss = self.output_loss(output, label)
         return output
     
