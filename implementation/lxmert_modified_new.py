@@ -95,6 +95,7 @@ class Lxmert(LxmertModel):
         text = item['text']
         img = item['img']
         label = item['label']
+        print(text)
         
         images, sizes, scales_yx = self.image_preprocess(img)
         
@@ -123,6 +124,12 @@ class Lxmert(LxmertModel):
         #Very important that the boxes are normalized
         normalized_boxes = output_dict.get("normalized_boxes")
         features = output_dict.get("roi_features")
+        
+        print(inputs.input_ids.shape)
+        print(inputs.attention_mask.shape)
+        print(inputs.token_type_ids.shape)
+        print(features.shape)
+        print(normalized_boxes.shape)
         
         output = super().forward(
             input_ids=inputs.input_ids,

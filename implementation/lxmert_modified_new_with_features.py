@@ -10,7 +10,6 @@ from processing_image import Preprocess
 from transformers import Trainer, TrainingArguments, AdamW
 from torch.utils.data import DataLoader
 
-
 class MyDataset(torch.utils.data.Dataset):
     def __init__(self,inputs,features, normalized_boxes,labels):
         self.inputs = inputs
@@ -19,8 +18,11 @@ class MyDataset(torch.utils.data.Dataset):
         self.labels = labels
     
     def __getitem__(self, idx):
-        item = {'inputs':self.inputs[idx],'features':self.features[idx],
-                'normalized_boxes': self.normalized_boxes[idx],
+        item = {'input_ids': self.inputs[idx]['input_ids'][0],
+                'attention_mask': self.inputs[idx]['attention_mask'][0],
+                'token_type_ids': self.inputs[idx]['token_type_ids'][0],
+                'features':self.features[idx][0],
+                'normalized_boxes': self.normalized_boxes[idx][0],
                 'label': self.labels[idx]}
         return item
 
@@ -34,16 +36,16 @@ class MyDataLoader():
         self.rcnn = GeneralizedRCNN.from_pretrained("unc-nlp/frcnn-vg-finetuned", config=self.rcnn_cfg)
         self.image_preprocess = Preprocess(self.rcnn_cfg)
         self.train, self.test = self.read_datasets()
-        self.train = self.process_dataset(self.train)
-        self.test = self.process_dataset(self.test)
-        self.train_dataset = MyDataset(self.train['inputs'].values,
-                                 self.train['features'].values,
-                                 self.train['normalized_boxes'].values,
-                                 self.train['label'].values)
-        self.test_dataset = MyDataset(self.test['inputs'].values,
-                                 self.test['features'].values,
-                                 self.test['normalized_boxes'].values,
-                                 self.test['label'].values)
+        self.train_processed = self.process_dataset(self.train)
+        self.test_processed = self.process_dataset(self.test)
+        self.train_dataset = MyDataset(self.train_processed['inputs'].values,
+                                 self.train_processed['features'].values,
+                                 self.train_processed['normalized_boxes'].values,
+                                 self.train_processed['label'].values)
+        self.test_dataset = MyDataset(self.test_processed['inputs'].values,
+                                 self.test_processed['features'].values,
+                                 self.test_processed['normalized_boxes'].values,
+                                 self.test_processed['label'].values)
         return
     
     def read_datasets(self):
@@ -56,7 +58,7 @@ class MyDataLoader():
         train['Flickr30kID'] = train['Flickr30kID'].apply(lambda x: data_path+'flickr30k_images/flickr30k_images/'+x)
         train.rename(columns={ train.columns[0]: "question", train.columns[1]: "image",
                               train.columns[2]: "label" }, inplace = True)
-        sample = train.sample(n=4, random_state=1)
+        sample = train.sample(n=10, random_state=1)
         sample_train, sample_test = train_test_split(sample, test_size=0.2)
         sample_train.reset_index(inplace=True,drop=True)
         sample_test.reset_index(inplace=True,drop=True)
@@ -111,7 +113,7 @@ class MyTrainer():
     
     def train_model(self,epochs=1):
         optim = AdamW(self.model.parameters(), lr=5e-5)
-        train_loader = DataLoader(self.train, batch_size=1, shuffle=True)
+        train_loader = DataLoader(self.train, batch_size=2, shuffle=True)
         for epoch in range(1):
             for item in train_loader:
                 optim.zero_grad()
@@ -130,29 +132,34 @@ class Lxmert(LxmertModel):
         self.config.problem_type = "single_label_classification"
         self.classification = torch.nn.Linear(self.config.hidden_size, numb_labels)
         self.num_labels = numb_labels
-        if self.config.problem_type == "multi_label_classification":
-          self.loss_fct = torch.nn.BCEWithLogitsLoss()
-          self.output_loss = lambda output,labels : self.loss_fct(output.logits, labels)
+        if self.config.problem_type == "single_label_classification":
+          self.loss_fct = torch.nn.CrossEntropyLoss()
+          self.output_loss = lambda output,labels : self.loss_fct(output.logits.view(-1, self.num_labels), labels.view(-1)) 
         elif self.config.problem_type == "regression":
           self.loss_fct = torch.nn.MSELoss()
           if self.num_labels == 1: self.output_loss = lambda output,labels : self.loss_fct(output.logits.squeeze(), labels.squeeze())
           else: self.output_loss =  lambda output,labels : self.loss_fct(output.logits, labels)
-        elif self.config.problem_type == "single_label_classification":
-          self.loss_fct = torch.nn.CrossEntropyLoss()
-          self.output_loss = lambda output,labels : self.loss_fct(output.logits.view(-1, self.num_labels), labels.view(-1)) 
+        elif self.config.problem_type == "multi_label_classification":
+          self.loss_fct = torch.nn.BCEWithLogitsLoss()
+          self.output_loss = lambda output,labels : self.loss_fct(output.logits, labels)
         # don't forget to init the weights for the new layers
         self.init_weights()
     
     def forward(self,item):
-        print(item)
-        inputs = item['inputs']
-        input_ids = inputs['input_ids'][0]
-        attention_mask=inputs['attention_mask'][0]
-        token_type_ids=inputs['token_type_ids'][0]
-        features = item['features'][0]
-        normalized_boxes = item['normalized_boxes'][0]
+        #print(item)
+        input_ids = item['input_ids']
+        attention_mask=item['attention_mask']
+        token_type_ids=item['token_type_ids']
+        features = item['features']
+        normalized_boxes = item['normalized_boxes']
+        #print(inputs)
+        print(input_ids.shape)
+        print(attention_mask.shape)
+        print(token_type_ids.shape)
+        print(features.shape)
+        print(normalized_boxes.shape)
         
-        label = item['label'][0]
+        label = item['label']
         output = super().forward(
             input_ids=input_ids,
             attention_mask=attention_mask,
@@ -163,7 +170,7 @@ class Lxmert(LxmertModel):
             output_attentions=False,
         )
                 
-        aux = self.classification(output.pooled_output[0])
+        aux = self.classification(output.pooled_output)
         output.logits = aux
         output.loss = None
         output.loss = self.output_loss(output, label)
@@ -212,20 +219,24 @@ class Lxmert(LxmertModel):
         #Very important that the boxes are normalized
         normalized_boxes = output_dict.get("normalized_boxes")
         features = output_dict.get("roi_features")
-        item = {'inputs':inputs,
+        item = {'input_ids': inputs['input_ids'],
+                'attention_mask': inputs['attention_mask'],
+                'token_type_ids': inputs['token_type_ids'],
                 'features':features, 
                 'normalized_boxes':normalized_boxes, 
                 'label':torch.LongTensor([label])}
         output = self.forward(item)
-        m = torch.nn.Softmax(dim=0)
+        m = torch.nn.Softmax(dim=1)
         probs = m(output.logits)
         print(probs)
         return output
         
 
 #if __name__ == "__main__":
+"""
 model = Lxmert()
-#train, test = MyDataLoader().get_datasets()
-#trainer = MyTrainer(model,train, test)
-#trainer.train_model()
+train, test = MyDataLoader().get_datasets()
+trainer = MyTrainer(model,train, test)
+trainer.train_model()
 output = model.run()
+"""
