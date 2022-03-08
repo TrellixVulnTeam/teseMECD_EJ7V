@@ -247,11 +247,11 @@ if task =='train':
     train, test = MyDataLoader().get_datasets()
     trainer = MyTrainer(model,train, test)
     trainer.train_model()
-    model.save_model("my_model")
+    model.save_model("my_model2")
     output = model.run()
     
 elif task =='test':
     model = Lxmert()
-    model.load_model("my_model")
+    model.load_model("my_model2")
     output = model.run()
     

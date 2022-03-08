@@ -188,8 +188,8 @@ class Lxmert(LxmertModel):
         
 
 #if __name__ == "__main__":
-task = 'train'
-#task = 'test'
+#task = 'train'
+task = 'test'
 if task =='train':
     model = Lxmert()
     trainer = MyTrainer(model)
