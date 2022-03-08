@@ -176,6 +176,12 @@ class Lxmert(LxmertModel):
         output.loss = self.output_loss(output, label)
         return output
         
+    def save_model(self,path):
+        torch.save(self.state_dict(), path)
+        
+    def load_model(self,path):
+        self.load_state_dict(torch.load(path))
+        self.eval()
         
     def run(self):
         data_path = './e-ViL/data/'
@@ -233,10 +239,19 @@ class Lxmert(LxmertModel):
         
 
 #if __name__ == "__main__":
-"""
-model = Lxmert()
-train, test = MyDataLoader().get_datasets()
-trainer = MyTrainer(model,train, test)
-trainer.train_model()
-output = model.run()
-"""
+#if __name__ == "__main__":
+task = 'train'
+#task = 'test'
+if task =='train':
+    model = Lxmert()
+    train, test = MyDataLoader().get_datasets()
+    trainer = MyTrainer(model,train, test)
+    trainer.train_model()
+    model.save_model("my_model")
+    output = model.run()
+    
+elif task =='test':
+    model = Lxmert()
+    model.load_model("my_model")
+    output = model.run()
+    

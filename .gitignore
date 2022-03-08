@@ -10,3 +10,6 @@ books/
 **/output_dir/**
 **/tmp_trainer/**
 **/my_model
+**/my_model2
+**/my_model2/**
+**/my-model2/**

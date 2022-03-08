@@ -152,6 +152,7 @@ class Lxmert(LxmertModel):
         
     def load_model(self,path):
         self.load_state_dict(torch.load(path))
+        self.eval()
         
     def run(self):
         data_path = './e-ViL/data/'
