@@ -81,14 +81,6 @@ class DataWriter():
             inputs = self.get_text_features(text)
             
             normalized_boxes, features = self.get_visual_features(img)
-            """
-            item = {'input_ids': self.get_tensor_as_bytes(inputs['input_ids'],buf),
-                    'attention_mask': self.get_tensor_as_bytes(inputs['attention_mask'],buf),
-                    'token_type_ids': self.get_tensor_as_bytes(inputs['token_type_ids'],buf),
-                    'features': features.numpy(),
-                    'normalized_boxes': normalized_boxes.numpy(),
-                    'label': label}
-            """
             item = {'input_ids': inputs['input_ids'].numpy(),
                     'attention_mask': inputs['attention_mask'].numpy(),
                     'token_type_ids': inputs['token_type_ids'].numpy(),
@@ -100,37 +92,21 @@ class DataWriter():
         txn.commit() 
         env.close()
 
-def DeserializeValue(value):
-    stream = io.BytesIO(value)  # implements seek()
-    value=torch.load(stream)
-    return value
 
-def SimpleDeserializeItem(item):
+def deserializeItem(item):
     item = pickle.loads(item)
-    return item
-
-def DeserializeItem(item):
-    item = pickle.loads(item)
-    item['input_ids']=DeserializeValue(item['input_ids'])
-    item['attention_mask']=DeserializeValue(item['attention_mask'])
-    item['token_type_ids']=DeserializeValue(item['token_type_ids'])
-    item['normalized_boxes']=torch.Tensor(item['normalized_boxes'])
-    item['features']=torch.Tensor(item['features'])
-    return item
-    
-def SimpleReadItem():
-    env = lmdb.open("train10")
-    txn = env.begin()
-    item = txn.get(str(2).encode())
-    item = SimpleDeserializeItem(item)
-    env.close()
+    item['input_ids']=torch.IntTensor(item['input_ids'][0])
+    item['attention_mask']=torch.IntTensor(item['attention_mask'][0])
+    item['token_type_ids']=torch.IntTensor(item['token_type_ids'][0])
+    item['normalized_boxes']=torch.FloatTensor(item['normalized_boxes'][0])
+    item['features']=torch.FloatTensor(item['features'][0])
     return item
 
 def ReadItem():
     env = lmdb.open("my_test_db")
     txn = env.begin()
     item = txn.get(str(2).encode())
-    item = DeserializeItem(item)
+    item = deserializeItem(item)
     env.close()
     return item
     

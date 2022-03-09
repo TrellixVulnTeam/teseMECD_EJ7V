@@ -30,22 +30,8 @@ class MyDataset(torch.utils.data.Dataset):
                 count = count + 1
         env.close()
         return count
-        
-    def deserializeValue(self,value):
-        stream = io.BytesIO(value)#implements seek()
-        value=torch.load(stream)
-        return value
-    
+            
     def deserializeItem(self,item):
-        item = pickle.loads(item)
-        item['input_ids']=self.deserializeValue(item['input_ids'])
-        item['attention_mask']=self.deserializeValue(item['attention_mask'])
-        item['token_type_ids']=self.deserializeValue(item['token_type_ids'])
-        item['normalized_boxes']=torch.Tensor(item['normalized_boxes'])
-        item['features']=torch.Tensor(item['features'])
-        return item
-    
-    def newDeserializeItem(self,item):
         item = pickle.loads(item)
         item['input_ids']=torch.IntTensor(item['input_ids'][0])
         item['attention_mask']=torch.IntTensor(item['attention_mask'][0])
@@ -56,8 +42,7 @@ class MyDataset(torch.utils.data.Dataset):
     
     def __getitem__(self, idx):
         item = self.txn.get(str(idx).encode())
-        #item = self.deserializeItem(item)
-        item = self.newDeserializeItem(item)
+        item = self.deserializeItem(item)
         return item
 
     def __len__(self):
