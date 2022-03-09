@@ -1,17 +1,13 @@
 import torch
 import pandas as pd
-import numpy as np
-from datasets import Dataset, load_dataset, Features
-from sklearn.model_selection import train_test_split
-from transformers import LxmertTokenizer, LxmertConfig, LxmertModel, LxmertForQuestionAnswering, PretrainedConfig, TrainingArguments
+from transformers import LxmertTokenizer, LxmertConfig, LxmertModel
 from modeling_frcnn import GeneralizedRCNN
 import utils
 from processing_image import Preprocess
-from transformers import Trainer, TrainingArguments, AdamW
+from transformers import AdamW
 from torch.utils.data import DataLoader
 import lmdb
 import pickle
-import io
 
 class MyDataset(torch.utils.data.Dataset):
     def __init__(self,path):
@@ -113,12 +109,6 @@ class Lxmert(LxmertModel):
             output_attentions=False,
         )
         
-        #print(output.pooled_output.shape)
-        #aux = output.pooled_output
-        #aux_mask = attention_mask
-        #input_mask_expanded = aux_mask.unsqueeze(-1).expand(aux.size()).float()
-        #aux = torch.sum(aux * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
-        
         aux = self.classification(output.pooled_output)
         
         output.logits = aux
@@ -133,63 +123,64 @@ class Lxmert(LxmertModel):
         self.load_state_dict(torch.load(path))
         self.eval()
         
-    def run(self):
-        data_path = './e-ViL/data/'
-        train = pd.read_csv(data_path+'esnlive_train.csv')
-        labels_encoding = {'contradiction':0,'neutral': 1,
-                           'entailment':2}
-        train['gold_label']=train['gold_label'].apply(lambda label: labels_encoding[label])
-        img_path = data_path+'flickr30k_images/flickr30k_images/'+ train.loc[50,'Flickr30kID']#"32542645.jpg"
-        question = train.loc[50,'hypothesis'] #"How many people are in the image?"
-        label = train.loc[50,'gold_label']
-        
-        lxmert_tokenizer = LxmertTokenizer.from_pretrained("unc-nlp/lxmert-base-uncased")
-        rcnn_cfg = utils.Config.from_pretrained("unc-nlp/frcnn-vg-finetuned")
-        rcnn = GeneralizedRCNN.from_pretrained("unc-nlp/frcnn-vg-finetuned", config=rcnn_cfg)
-        image_preprocess = Preprocess(rcnn_cfg)
-        
-        images, sizes, scales_yx = image_preprocess(img_path)
-        
-        #preprocess image
-        output_dict = rcnn(
-            images, 
-            sizes, 
-            scales_yx=scales_yx, 
-            padding="max_detections",
-            max_detections=rcnn_cfg.max_detections,
-            return_tensors="pt"
-        )
-        
-        #preprocess text
-        inputs = lxmert_tokenizer(
-            question,
-            padding="max_length",
-            max_length=20,
-            truncation=True,
-            return_token_type_ids=True,
-            return_attention_mask=True,
-            add_special_tokens=True,
-            return_tensors="pt"
-        )
-        
-        #Very important that the boxes are normalized
-        normalized_boxes = output_dict.get("normalized_boxes")
-        features = output_dict.get("roi_features")
-        item = {'input_ids': inputs['input_ids'],
-                'attention_mask': inputs['attention_mask'],
-                'token_type_ids': inputs['token_type_ids'],
-                'features':features, 
-                'normalized_boxes':normalized_boxes, 
-                'label':torch.LongTensor([label])}
-        output = self.forward(inputs['input_ids'],inputs['attention_mask'],inputs['token_type_ids'],
-                              features,normalized_boxes,torch.LongTensor([label]))
-        m = torch.nn.Softmax(dim=1)
-        probs = m(output.logits)
-        print(img_path)
-        print(question)
-        print(label)
-        print(probs)
-        return output
+
+def run(model):
+    data_path = './e-ViL/data/'
+    train = pd.read_csv(data_path+'esnlive_train.csv')
+    labels_encoding = {'contradiction':0,'neutral': 1,
+                       'entailment':2}
+    train['gold_label']=train['gold_label'].apply(lambda label: labels_encoding[label])
+    img_path = data_path+'flickr30k_images/flickr30k_images/'+ train.loc[50,'Flickr30kID']#"32542645.jpg"
+    question = train.loc[50,'hypothesis'] #"How many people are in the image?"
+    label = train.loc[50,'gold_label']
+    
+    lxmert_tokenizer = LxmertTokenizer.from_pretrained("unc-nlp/lxmert-base-uncased")
+    rcnn_cfg = utils.Config.from_pretrained("unc-nlp/frcnn-vg-finetuned")
+    rcnn = GeneralizedRCNN.from_pretrained("unc-nlp/frcnn-vg-finetuned", config=rcnn_cfg)
+    image_preprocess = Preprocess(rcnn_cfg)
+    
+    images, sizes, scales_yx = image_preprocess(img_path)
+    
+    #preprocess image
+    output_dict = rcnn(
+        images, 
+        sizes, 
+        scales_yx=scales_yx, 
+        padding="max_detections",
+        max_detections=rcnn_cfg.max_detections,
+        return_tensors="pt"
+    )
+    
+    #preprocess text
+    inputs = lxmert_tokenizer(
+        question,
+        padding="max_length",
+        max_length=20,
+        truncation=True,
+        return_token_type_ids=True,
+        return_attention_mask=True,
+        add_special_tokens=True,
+        return_tensors="pt"
+    )
+    
+    #Very important that the boxes are normalized
+    normalized_boxes = output_dict.get("normalized_boxes")
+    features = output_dict.get("roi_features")
+    item = {'input_ids': inputs['input_ids'],
+            'attention_mask': inputs['attention_mask'],
+            'token_type_ids': inputs['token_type_ids'],
+            'features':features, 
+            'normalized_boxes':normalized_boxes, 
+            'label':torch.LongTensor([label])}
+    output = model.forward(inputs['input_ids'],inputs['attention_mask'],inputs['token_type_ids'],
+                          features,normalized_boxes,torch.LongTensor([label]))
+    m = torch.nn.Softmax(dim=1)
+    probs = m(output.logits)
+    print(img_path)
+    print(question)
+    print(label)
+    print(probs)
+    return output
         
 #if __name__ == "__main__":
 task = 'train'
@@ -204,10 +195,10 @@ if task =='train':
     trainer = MyTrainer(model,train, test)
     trainer.train_model()
     model.save_model("my_model2")
-    output = model.run()
+    run(model)
 elif task =='test':
     model = Lxmert()
     model = model.to(model.device)
     model.load_model("my_model2")
-    output = model.run()
+    run(model)
     
