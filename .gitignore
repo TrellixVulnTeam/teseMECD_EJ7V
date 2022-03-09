@@ -13,3 +13,5 @@ books/
 **/my_model2
 **/my_model2/**
 **/my-model2/**
+**/my_train_db/**
+**/my_test_db/**

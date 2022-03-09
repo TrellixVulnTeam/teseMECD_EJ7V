@@ -32,8 +32,7 @@ class MyDataset(torch.utils.data.Dataset):
 class MyDataLoader():
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.lxmert_config = LxmertConfig.from_pretrained("unc-nlp/lxmert-base-uncased")
-        self.lxmert_tokenizer = LxmertTokenizer.from_pretrained(self.lxmert_config)
+        self.lxmert_tokenizer = LxmertTokenizer.from_pretrained("unc-nlp/lxmert-base-uncased")
         self.rcnn_cfg = utils.Config.from_pretrained("unc-nlp/frcnn-vg-finetuned")
         self.rcnn_cfg.MODEL.DEVICE = self.device
         self.rcnn = GeneralizedRCNN.from_pretrained("unc-nlp/frcnn-vg-finetuned", config=self.rcnn_cfg)
@@ -71,7 +70,6 @@ class MyDataLoader():
         return self.train_dataset, self.test_dataset 
         
     def get_visual_features(self,images):
-        images = images.to(self.device)
         #preprocess image
         images, sizes, scales_yx = self.image_preprocess(images)
         output_dict = self.rcnn(
@@ -121,14 +119,15 @@ class MyTrainer():
         train_loader = DataLoader(self.train, batch_size=2, shuffle=True)
         for epoch in range(1):
             for item in train_loader:
-                input_ids = item['input_ids']
-                attention_mask=item['attention_mask']
-                token_type_ids=item['token_type_ids']
-                features = item['features']
-                normalized_boxes = item['normalized_boxes']
-                label = item['label']
+                input_ids = item['input_ids'].to(self.device)
+                attention_mask=item['attention_mask'].to(self.device)
+                token_type_ids=item['token_type_ids'].to(self.device)
+                features = item['features'].to(self.device)
+                normalized_boxes = item['normalized_boxes'].to(self.device)
+                label = item['label'].to(self.device)
                 optim.zero_grad()
-                outputs = self.model.forward(item)
+                outputs = self.model.forward(input_ids,attention_mask,token_type_ids,
+                                             features,normalized_boxes,label)
                 loss = outputs.loss#[0]
                 loss.backward()
                 optim.step()
@@ -249,7 +248,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #task = 'test'
 if task =='train':
     model = Lxmert()
-    model = model.to(model.device)
+    model = model.to(device)
     train, test = MyDataLoader().get_datasets()
     trainer = MyTrainer(model,train, test)
     trainer.train_model()
