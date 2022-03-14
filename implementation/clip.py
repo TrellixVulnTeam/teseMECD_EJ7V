@@ -6,9 +6,6 @@ from transformers import VisionTextDualEncoderModel, VisionTextDualEncoderProces
 from PIL import Image
 from my_trainer import MyTrainer
 
-processor = CLIPProcessor.from_pretrained("flax-community/clip-rsicd-v2")
-tokenizer = CLIPTokenizer.from_pretrained("flax-community/clip-rsicd-v2")
-
 """
 class MyDataLoader():
     def __init__(self):
@@ -110,14 +107,22 @@ class MyVisionTextModel(CLIPModel):
     
     def forward(self, input_ids=None, pixel_values=None, attention_mask=None, position_ids=None, return_loss=None, output_attentions=None, output_hidden_states=None, label=None, ):
       output = super().forward(input_ids,  pixel_values, attention_mask, position_ids, return_loss, output_attentions, output_hidden_states, return_dict=True)
-      aux_vision = output.vision_model_output[0]
+      #print(output.vision_model_output)
+      #print(output.vision_model_output[0])
+      aux_vision = output.vision_model_output[0]#.pooler_output#
       aux_vision = self.visual_projection(aux_vision)
-      aux_text = output.text_model_output[0]
+      aux_text = output.text_model_output[0]#.pooler_output#[0]
       aux_text = self.text_projection(aux_text)
       aux = torch.cat((aux_vision,aux_text),dim=1)
+      print('cat_vision_text',aux.size())
       aux_mask=attention_mask
-      aux_mask = torch.cat(( torch.ones(aux_vision.size,dtype=torch.bool) , aux_mask), dim=1 )	
+      print('attention_mask',aux_vision.size())
+      ones = torch.ones(aux_vision.size(),dtype=torch.bool)
+      print('ones',ones.size())
+      aux_mask = torch.cat((ones,aux_mask), dim=1 )	
+      print('aux_mask',aux_mask.size())
       aux = self.new_transformer_encoder( aux, mask=aux_mask )
+      print('transformer_encoder',aux.size())
       input_mask_expanded = aux_mask.unsqueeze(-1).expand(aux.size()).float()
       aux = torch.sum(aux * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
       aux = self.classification(aux)
@@ -134,6 +139,7 @@ class MyVisionTextModel(CLIPModel):
         self.eval()
 
 def run(model):
+    processor = CLIPProcessor.from_pretrained("flax-community/clip-rsicd-v2")
     url = "https://fki.tic.heia-fr.ch/static/img/a01-122-02.jpg"
     image = Image.open(requests.get(url, stream=True).raw).convert("RGB")
     # clip training example
