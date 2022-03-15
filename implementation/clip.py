@@ -116,10 +116,11 @@ class MyVisionTextModel(CLIPModel):
       aux = torch.cat((aux_vision,aux_text),dim=1)
       print('cat_vision_text',aux.size())
       aux_mask=attention_mask
-      print('attention_mask',aux_vision.size())
+      print('attention_mask',aux_mask.size())
       ones = torch.ones(aux_vision.size(),dtype=torch.bool)
       print('ones',ones.size())
-      aux_mask = torch.cat((ones,aux_mask), dim=1 )	
+      print('here',ones.size(),aux_mask.size())
+      aux_mask = torch.cat((ones,aux_mask), dim=0)	
       print('aux_mask',aux_mask.size())
       aux = self.new_transformer_encoder( aux, mask=aux_mask )
       print('transformer_encoder',aux.size())
@@ -139,9 +140,9 @@ class MyVisionTextModel(CLIPModel):
         self.eval()
 
 def run(model):
-    processor = CLIPProcessor.from_pretrained("flax-community/clip-rsicd-v2")
-    url = "https://fki.tic.heia-fr.ch/static/img/a01-122-02.jpg"
-    image = Image.open(requests.get(url, stream=True).raw).convert("RGB")
+    processor = CLIPProcessor.from_pretrained("flax-community/clip-rsicd-v2",local_files_only = True)
+    url = "test.jpg"
+    image = Image.open(url).convert("RGB")
     # clip training example
     pixel_values = processor(images=image, return_tensors="pt").pixel_values
     text = "hello world"
