@@ -85,7 +85,7 @@ class MyDataLoader():
 """
     
 class MyVisionTextModel(CLIPModel):
-    def __init__(self, num_labels=10):
+    def __init__(self, num_labels=3):
       super().__init__(CLIPConfig.from_pretrained("flax-community/clip-rsicd-v2"))
       self.config.problem_type = "single_label_classification"
       self.new_encoder_layer = torch.nn.TransformerEncoderLayer(d_model=512, nhead=8)
@@ -107,34 +107,30 @@ class MyVisionTextModel(CLIPModel):
     
     def forward(self, input_ids=None, pixel_values=None, attention_mask=None, position_ids=None, return_loss=None, output_attentions=None, output_hidden_states=None, label=None, ):
       output = super().forward(input_ids,  pixel_values, attention_mask, position_ids, return_loss, output_attentions, output_hidden_states, return_dict=True)
-      #print(output.vision_model_output)
-      #print(output.vision_model_output[0])
+      print('ov',output.vision_model_output[0].size())
+      print('ot',output.text_model_output[0].size())
+      print('am',attention_mask.size())
       aux_vision = output.vision_model_output[0]#.pooler_output#
       aux_vision = self.visual_projection(aux_vision)
-      print('attention_mask',attention_mask)
-      print('aux_vision',aux_vision.size())
       aux_text = output.text_model_output[0]#.pooler_output#[0]
-      print('aux_text',aux_text.size())
       aux_text = self.text_projection(aux_text)
       aux = torch.cat((aux_vision,aux_text),dim=1)
-      print('cat_vision_text',aux.size())
-      aux_mask=attention_mask
-      print('attention_mask',aux_mask.size())
-      ones = torch.ones(1,aux_vision.shape[1],dtype=torch.bool)
-      print('ones',ones.size())
-      print('here',ones.size(),aux_mask.size())
-      print('TYPE1',ones.type(),'TYPE2',aux_mask.type())
-      aux_mask = torch.cat((ones,aux_mask.bool()), dim=1)
-      print('aux_mask',aux_mask.size())
-      print('Aux_size',aux.size())
+      #1
+      #ones = torch.ones(aux_vision.size(),dtype=torch.bool)
+      #aux_mask = torch.cat((ones,attention_mask.bool()), dim=1)
+      #2
+      #ones = torch.ones(1,aux_vision.shape[1],dtype=torch.bool)
+      #aux_mask = torch.cat((ones,attention_mask.bool()), dim=1)
+      #3
+      aux_mask = torch.ones(1,1)
+      #print('mask',aux_mask.size(),'ones',ones.size(),'am',attention_mask.size())
       aux = self.new_transformer_encoder( aux, mask=aux_mask )
-      print('transformer_encoder',aux.size())
       input_mask_expanded = aux_mask.unsqueeze(-1).expand(aux.size()).float()
       aux = torch.sum(aux * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
       aux = self.classification(aux)
       output.logits = aux
       output.loss = None
-      #output.loss = self.output_loss(output, label)
+      output.loss = self.output_loss(output, label)
       return output
   
     def save_model(self,path):
@@ -152,7 +148,9 @@ def run(model):
     pixel_values = processor(images=image, return_tensors="pt").pixel_values
     text = "hello world"
     inputs = processor.tokenizer(text, return_tensors="pt")
-    outputs = model(input_ids=inputs.input_ids, attention_mask=inputs.attention_mask, pixel_values=pixel_values, return_loss=True )
+    outputs = model(input_ids=inputs.input_ids, attention_mask=inputs.attention_mask, 
+                    pixel_values=pixel_values, return_loss=True,
+                    label = torch.LongTensor([2]))
     loss = outputs.loss
     logits = outputs.logits
     print(loss)
@@ -163,7 +161,6 @@ def run(model):
 #task = 'train'
 task = 'test'
 device = 'cpu'#torch.device("cuda" if torch.cuda.is_available() else "cpu")
-#task = 'test'
 
 if task =='train':
     model = MyVisionTextModel()
