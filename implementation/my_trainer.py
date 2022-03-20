@@ -9,13 +9,13 @@ class MyTrainer():
         else:
             self.device = device#'cpu'
         self.model = model
+        self.optimizer = AdamW(self.model.parameters(), lr=5e-5)
         self.train = train
-        self.test = test        
+        self.test = test     
     
     def train_model(self,epochs=1):
-        optim = AdamW(self.model.parameters(), lr=5e-5)
         train_loader = DataLoader(self.train, batch_size=1, shuffle=True)
-        for epoch in range(1):
+        for epoch in range(epochs):
             for item in train_loader:
                 input_ids = item['input_ids'].to(self.device)
                 attention_mask=item['attention_mask'].to(self.device)
@@ -23,12 +23,12 @@ class MyTrainer():
                 features = item['features'].to(self.device)
                 normalized_boxes = item['normalized_boxes'].to(self.device)
                 label = item['label'].to(self.device)
-                optim.zero_grad()
+                self.optimizer.zero_grad()
                 outputs = self.model.forward(input_ids,attention_mask,token_type_ids,
                                              features,normalized_boxes,label)
                 loss = outputs.loss#[0]
                 loss.backward()
-                optim.step()
+                self.optimizer.step()
         self.model.eval()
         self.model.save_pretrained("my_model")
         return
