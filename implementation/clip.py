@@ -88,7 +88,7 @@ class MyVisionTextModel(CLIPModel):
     def __init__(self, num_labels=3):
       super().__init__(CLIPConfig.from_pretrained("flax-community/clip-rsicd-v2"))
       self.config.problem_type = "single_label_classification"
-      self.new_encoder_layer = torch.nn.TransformerEncoderLayer(d_model=512, nhead=8)
+      self.new_encoder_layer = torch.nn.TransformerEncoderLayer(d_model=512, nhead=8, dropout=0.1)
       self.new_transformer_encoder = torch.nn.TransformerEncoder(self.new_encoder_layer, num_layers=3)
       self.classification = torch.nn.Linear(512, num_labels, bias=True)
       self.num_labels = num_labels
@@ -117,14 +117,23 @@ class MyVisionTextModel(CLIPModel):
       aux = torch.cat((aux_vision,aux_text),dim=1)
       #1
       #ones = torch.ones(aux_vision.size(),dtype=torch.bool)
+      #print('ones',ones.size())
       #aux_mask = torch.cat((ones,attention_mask.bool()), dim=1)
       #2
-      #ones = torch.ones(1,aux_vision.shape[1],dtype=torch.bool)
-      #aux_mask = torch.cat((ones,attention_mask.bool()), dim=1)
+      ones = torch.ones(1,aux_vision.shape[1],dtype=torch.bool)
+      aux_mask = torch.cat((ones,attention_mask.bool()), dim=1).float()
       #3
-      aux_mask = torch.ones(1,1)
+      #aux_mask = torch.ones(1,1)
+      
       #print('mask',aux_mask.size(),'ones',ones.size(),'am',attention_mask.size())
-      aux = self.new_transformer_encoder( aux, mask=aux_mask )
+      #aux = torch.swapaxes(aux, 0, 1)
+      #aux_mask = aux_mask.repeat(aux_mask.shape[1],1)
+      aux = torch.swapaxes(aux, 0, 1)
+      #aux_mask = torch.swapaxes(aux_mask, 0, 1)
+      print('aux',aux.size())
+      print('aux_mask',aux_mask.size())
+      #return aux, aux_mask
+      aux = self.new_transformer_encoder( aux, src_key_padding_mask=aux_mask)
       input_mask_expanded = aux_mask.unsqueeze(-1).expand(aux.size()).float()
       aux = torch.sum(aux * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
       aux = self.classification(aux)
@@ -175,8 +184,18 @@ if task =='train':
 elif task =='test':
     model = MyVisionTextModel()
     model = model.to(device)
+    processor = CLIPProcessor.from_pretrained("flax-community/clip-rsicd-v2",local_files_only = True)
+    url = "test.jpg"
+    image = Image.open(url).convert("RGB")
+    # clip training example
+    pixel_values = processor(images=image, return_tensors="pt").pixel_values
+    text = "hello world"
+    inputs = processor.tokenizer(text, return_tensors="pt")
+    aux, aux_mask = model(input_ids=inputs.input_ids, attention_mask=inputs.attention_mask, 
+                    pixel_values=pixel_values, return_loss=True,
+                    label = torch.LongTensor([2]))
     #model.load_model("my_model2")
-    output = run(model)
+    #output = run(model)
     
 #model.text_model = clip_model.text_model
 #model.vision_model = clip_model.vision_model

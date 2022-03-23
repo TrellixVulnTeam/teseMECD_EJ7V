@@ -237,7 +237,7 @@ class Lxmert(LxmertModel):
         print(probs)
         return output
         
-"""
+
 #if __name__ == "__main__":
 #if __name__ == "__main__":
 task = 'train'
@@ -254,5 +254,4 @@ elif task =='test':
     model = Lxmert()
     model.load_model("my_model2")
     output = model.run()
-"""
     

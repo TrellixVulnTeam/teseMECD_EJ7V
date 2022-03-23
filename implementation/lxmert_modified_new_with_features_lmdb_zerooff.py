@@ -160,7 +160,7 @@ if task =='train':
     model = Lxmert()
     train = MyDataset("my_train_db")
     test = MyDataset("my_test_db")
-    trainer = MyTrainer(model,train, test)
+    trainer = MyTrainer(model,train)
     trainer.train_model()
     model.save_model("my_model2")
     run(model)
