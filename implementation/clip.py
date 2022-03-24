@@ -121,7 +121,7 @@ class MyVisionTextModel(CLIPModel):
       #aux_mask = torch.cat((ones,attention_mask.bool()), dim=1)
       #2
       ones = torch.ones(1,aux_vision.shape[1],dtype=torch.bool)
-      aux_mask = torch.cat((ones,attention_mask.bool()), dim=1).float()
+      aux_mask = torch.cat((ones,attention_mask.bool()), dim=1)
       #3
       #aux_mask = torch.ones(1,1)
       
