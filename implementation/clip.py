@@ -6,7 +6,6 @@ from transformers import VisionTextDualEncoderModel, VisionTextDualEncoderProces
 from PIL import Image
 from my_trainer import MyTrainer
 
-"""
 class MyDataLoader():
     def __init__(self):
         self.lxmert_tokenizer = LxmertTokenizer.from_pretrained("unc-nlp/lxmert-base-uncased")
@@ -82,7 +81,6 @@ class MyDataLoader():
         dataset['normalized_boxes'] = boxes_features.apply(lambda x: x[0])
         dataset['features'] = boxes_features.apply(lambda x: x[1])
         return dataset
-"""
     
 class MyVisionTextModel(CLIPModel):
     def __init__(self, num_labels=3):
@@ -115,30 +113,21 @@ class MyVisionTextModel(CLIPModel):
       aux_text = output.text_model_output[0]#.pooler_output#[0]
       aux_text = self.text_projection(aux_text)
       aux = torch.cat((aux_vision,aux_text),dim=1)
-      #1
-      #ones = torch.ones(aux_vision.size(),dtype=torch.bool)
-      #print('ones',ones.size())
-      #aux_mask = torch.cat((ones,attention_mask.bool()), dim=1)
-      #2
-      ones = torch.ones(1,aux_vision.shape[1],dtype=torch.bool)
-      aux_mask = torch.cat((ones,attention_mask.bool()), dim=1)
-      #3
-      #aux_mask = torch.ones(1,1)
-      
-      #print('mask',aux_mask.size(),'ones',ones.size(),'am',attention_mask.size())
-      #aux = torch.swapaxes(aux, 0, 1)
-      #aux_mask = aux_mask.repeat(aux_mask.shape[1],1)
-      aux = torch.swapaxes(aux, 0, 1)
-      #aux_mask = torch.swapaxes(aux_mask, 0, 1)
+
+      ones = torch.ones(1,aux_vision.shape[1],dtype=torch.float)
+      aux_mask = torch.cat((ones,attention_mask), dim=1)
+      padding_mask = torch.swapaxes(aux_mask, 0, 1)
+
       print('aux',aux.size())
       print('aux_mask',aux_mask.size())
-      #return aux, aux_mask
-      aux = self.new_transformer_encoder( aux, src_key_padding_mask=aux_mask)
+
+      aux = self.new_transformer_encoder( aux, src_key_padding_mask= padding_mask)
+      
       input_mask_expanded = aux_mask.unsqueeze(-1).expand(aux.size()).float()
       aux = torch.sum(aux * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+      
       aux = self.classification(aux)
       output.logits = aux
-      output.loss = None
       output.loss = self.output_loss(output, label)
       return output
   
@@ -166,7 +155,6 @@ def run(model):
     print(logits)
     return outputs
 
-#if __name__ == "__main__":
 #task = 'train'
 task = 'test'
 device = 'cpu'#torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -174,9 +162,7 @@ device = 'cpu'#torch.device("cuda" if torch.cuda.is_available() else "cpu")
 if task =='train':
     model = MyVisionTextModel()
     model = model.to(device)
-    #train, test = MyDataLoader().get_datasets()
-    train = None
-    test = None
+    train, test = MyDataLoader().get_datasets()
     trainer = MyTrainer(model,train, test, device = device)
     trainer.train_model()
     model.save_model("my_model2")
@@ -191,7 +177,7 @@ elif task =='test':
     pixel_values = processor(images=image, return_tensors="pt").pixel_values
     text = "hello world"
     inputs = processor.tokenizer(text, return_tensors="pt")
-    aux, aux_mask = model(input_ids=inputs.input_ids, attention_mask=inputs.attention_mask, 
+    outputs = model(input_ids=inputs.input_ids, attention_mask=inputs.attention_mask, 
                     pixel_values=pixel_values, return_loss=True,
                     label = torch.LongTensor([2]))
     #model.load_model("my_model2")
