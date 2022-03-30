@@ -60,7 +60,7 @@ class MyTrainer():
                 img = item['img'].to(self.device)
                 label = item['label'].to(self.device)
                 optim.zero_grad()
-                outputs = model.forward(text,img,label)
+                outputs = model.forward(item)
                 loss = outputs.loss
                 loss.backward()
                 optim.step()

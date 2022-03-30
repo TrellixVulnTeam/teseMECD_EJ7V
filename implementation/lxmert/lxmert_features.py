@@ -35,37 +35,35 @@ class MyDataLoader():
         self.rcnn_cfg = utils.Config.from_pretrained("unc-nlp/frcnn-vg-finetuned")
         self.rcnn = GeneralizedRCNN.from_pretrained("unc-nlp/frcnn-vg-finetuned", config=self.rcnn_cfg)
         self.image_preprocess = Preprocess(self.rcnn_cfg)
-        self.train, self.test = self.read_datasets()
-        self.train_processed = self.process_dataset(self.train)
-        self.test_processed = self.process_dataset(self.test)
-        self.train_dataset = MyDataset(self.train_processed['inputs'].values,
+        self.train = self.read_dataset(data_path ='./e-ViL/data/', dataset_path='esnlive_train.csv',
+                                       img_path='flickr30k_images/flickr30k_images/')
+        self.test = self.read_dataset(data_path ='./e-ViL/data/', dataset_path='esnlive_test.csv',
+                                       img_path='flickr30k_images/flickr30k_images/')
+        self.train = self.process_dataset(self.train)
+        self.test = self.process_dataset(self.test)
+        self.train = MyDataset(self.train_processed['inputs'].values,
                                  self.train_processed['features'].values,
                                  self.train_processed['normalized_boxes'].values,
                                  self.train_processed['label'].values)
-        self.test_dataset = MyDataset(self.test_processed['inputs'].values,
+        self.test = MyDataset(self.test_processed['inputs'].values,
                                  self.test_processed['features'].values,
                                  self.test_processed['normalized_boxes'].values,
                                  self.test_processed['label'].values)
         return
     
-    def read_datasets(self):
-        data_path = './e-ViL/data/'
-        train = pd.read_csv(data_path+'esnlive_train.csv')
+    def read_dataset(self,data_path=None,dataset_path=None,img_path=None):
+        data = pd.read_csv(data_path+dataset_path)
         labels_encoding = {'contradiction':0,'neutral': 1,
                            'entailment':2}
-        train = train[['hypothesis','Flickr30kID','gold_label']]
-        train['gold_label']=train['gold_label'].apply(lambda label: labels_encoding[label])
-        train['Flickr30kID'] = train['Flickr30kID'].apply(lambda x: data_path+'flickr30k_images/flickr30k_images/'+x)
-        train.rename(columns={ train.columns[0]: "question", train.columns[1]: "image",
-                              train.columns[2]: "label" }, inplace = True)
-        sample = train.sample(n=10, random_state=1)
-        sample_train, sample_test = train_test_split(sample, test_size=0.2)
-        sample_train.reset_index(inplace=True,drop=True)
-        sample_test.reset_index(inplace=True,drop=True)
-        return sample_train, sample_test
+        data = data[['hypothesis','Flickr30kID','gold_label']]
+        data['gold_label']=data['gold_label'].apply(lambda label: labels_encoding[label])
+        data['Flickr30kID'] = data['Flickr30kID'].apply(lambda x: data_path+img_path+x)
+        data.rename(columns={ data.columns[0]: "hypothesis", data.columns[1]: "image",
+                              data.columns[2]: "label" }, inplace = True)
+        return data
     
     def get_datasets(self):
-        return self.train_dataset, self.test_dataset 
+        return self.train, self.test 
         
     def get_visual_features(self,images):
         #preprocess image

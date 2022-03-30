@@ -63,12 +63,14 @@ class Lxmert(LxmertModel):
         self.init_weights()
     
     def forward(self,input_ids,attention_mask,token_type_ids,features,normalized_boxes,label):
-        #print(inputs)
+        """"
+        print(inputs)
         print(input_ids.shape)
         print(attention_mask.shape)
         print(token_type_ids.shape)
         print(features.shape)
         print(normalized_boxes.shape)
+        """
         output = super().forward(
             input_ids=input_ids,
             attention_mask=attention_mask,
