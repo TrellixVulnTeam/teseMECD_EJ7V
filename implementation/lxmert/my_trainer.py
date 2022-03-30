@@ -7,7 +7,7 @@ class MyTrainer():
         if device == None:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         else:
-            self.device = device#'cpu'
+            self.device = device
         self.model = model
         self.optimizer = AdamW(self.model.parameters(), lr=5e-5)
         self.train = train
