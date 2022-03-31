@@ -1,13 +1,11 @@
 import torch
 import pandas as pd
-import numpy as np
-from datasets import Dataset, load_dataset, Features
 from sklearn.model_selection import train_test_split
-from transformers import LxmertTokenizer, LxmertConfig, LxmertModel, LxmertForQuestionAnswering, PretrainedConfig, TrainingArguments
+from transformers import LxmertTokenizer, LxmertConfig, LxmertModel
 from modeling_frcnn import GeneralizedRCNN
 import utils
 from processing_image import Preprocess
-from transformers import Trainer, TrainingArguments, AdamW
+from transformers import AdamW
 from torch.utils.data import DataLoader
 
 class MyDataset(torch.utils.data.Dataset):
