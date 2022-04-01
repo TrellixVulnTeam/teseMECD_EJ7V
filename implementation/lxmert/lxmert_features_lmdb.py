@@ -85,6 +85,9 @@ class Lxmert(LxmertModel):
         
         output.logits = aux
         output.loss = None
+        print(output)
+        print(output.logits.shape)
+        print(label.shape)
         output.loss = self.output_loss(output, label)
         return output
         
@@ -156,17 +159,18 @@ def run(model):
         
 #if __name__ == "__main__":
 task = 'train'
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = 'cpu'
+#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #task = 'test'
 
 if task =='train':
     model = Lxmert()
     model = model.to(device)
-    train = MyDataset("my_train_db")
-    test = MyDataset("my_test_db")
+    train = MyDataset("../my_train_db")
+    test = MyDataset("../my_test_db")
     trainer = MyTrainer(model,train, test, device = device)
     trainer.train_model()
-    model.save_model("my_model2")
+    model.save_model("my_model")
     run(model)
 elif task =='test':
     model = Lxmert()
