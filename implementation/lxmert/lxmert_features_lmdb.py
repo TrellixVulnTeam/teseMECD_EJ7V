@@ -19,10 +19,8 @@ class MyDataset(torch.utils.data.Dataset):
     
     def getSize(self):
         env = lmdb.open(self.path, readonly=True)
-        txn = env.begin()
-        count = 0
-        for key, value in txn.cursor():
-                count = count + 1
+        stats = env.stat()
+        count = stats['entries']
         env.close()
         return count
             
@@ -42,6 +40,9 @@ class MyDataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return self.size
+    
+    def __exit__(self):
+        self.env.close()
     
 class Lxmert(LxmertModel):
     def __init__(self,numb_labels=3):
@@ -85,9 +86,11 @@ class Lxmert(LxmertModel):
         
         output.logits = aux
         output.loss = None
+        """
         print(output)
         print(output.logits.shape)
         print(label.shape)
+        """
         output.loss = self.output_loss(output, label)
         return output
         
@@ -166,8 +169,9 @@ device = 'cpu'
 if task =='train':
     model = Lxmert()
     model = model.to(device)
-    train = MyDataset("../my_train_db")
-    test = MyDataset("../my_test_db")
+    train = MyDataset("./my_train_db")
+    test = MyDataset("./my_train_db")
+    #test = MyDataset("../my_test_db")
     trainer = MyTrainer(model,train, test, device = device)
     trainer.train_model()
     model.save_model("my_model")

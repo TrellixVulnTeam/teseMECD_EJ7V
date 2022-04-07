@@ -26,7 +26,7 @@ class MyTrainer():
                 self.optimizer.zero_grad()
                 outputs = self.model.forward(input_ids,attention_mask,token_type_ids,
                                              features,normalized_boxes,label)
-                loss = outputs.loss#[0]
+                loss = outputs.loss
                 loss.backward()
                 self.optimizer.step()
         self.model.eval()

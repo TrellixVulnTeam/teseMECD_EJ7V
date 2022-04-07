@@ -18,9 +18,10 @@ class DataWriter():
         self.image_preprocess = Preprocess(self.rcnn_cfg)
         self.train_dataset = self.read_dataset('esnlive_train.csv')
         self.test_dataset = self.read_dataset('esnlive_test.csv')
+        self.dev_dataset = self.read_dataset('esnlive_dev.csv')
         return
     
-    def read_dataset(self, dataset_name ,data_path = './e-ViL/data/',
+    def read_dataset(self, dataset_name ,data_path = '../e-ViL/data/',
                      images_path ='flickr30k_images/flickr30k_images/' ):
         dataset = pd.read_csv(data_path+dataset_name)
         labels_encoding = {'contradiction':0,'neutral': 1,
@@ -52,7 +53,7 @@ class DataWriter():
         inputs = self.lxmert_tokenizer(
             text,
             padding="max_length",
-            max_length=20,
+            max_length=190,
             truncation=True,
             return_token_type_ids=True,
             return_attention_mask=True,
@@ -65,9 +66,9 @@ class DataWriter():
         torch.save(tensor, buffer)
         return buffer.getvalue()
         
-    def write_to_lmdb(self,pd_dataframe,filename):
+    def write_to_lmdb(self,pd_dataframe,filename,map_size = 1000000000):#1GB
         k = 0
-        env = lmdb.open(filename, map_size= 1000000000)#1GB
+        env = lmdb.open(filename, map_size= map_size)
         txn = env.begin(write=True)
         buf = io.BytesIO()
         for idx in range(len(pd_dataframe)):
@@ -103,7 +104,7 @@ def deserializeItem(item):
     return item
 
 def ReadItem():
-    env = lmdb.open("my_test_db")
+    env = lmdb.open("my_train_db")
     txn = env.begin()
     item = txn.get(str(2).encode())
     item = deserializeItem(item)
@@ -118,18 +119,30 @@ def ReadAllData():
     # Traverse all data and key values through cursor() 
     for key, value in txn.cursor():
         total_bytes+=sys.getsizeof(value)
+        total_bytes+=sys.getsizeof(key)
     print(total_bytes)
     env.close()
 
 def getStats(lmdb_file_name="my_train_db"):
     lmdb_env = lmdb.open(lmdb_file_name, readonly=True)
-    print(lmdb_env.stat())
+    stats = lmdb_env.stat()
+    info = lmdb_env.info()
     lmdb_env.close()
-        
+    return stats, info
+
+def getSize(lmdb_file_name="my_train_db"):
+    lmdb_env = lmdb.open(lmdb_file_name, readonly=True)
+    stats = lmdb_env.stat()
+    info = lmdb_env.info()
+    lmdb_env.close()
+    dbSize = stats['psize'] * (stats['leaf_pages'] + stats['branch_pages'] + stats['overflow_pages'])
+    return dbSize/1024/1024
 """
 dw = DataWriter()
-dw.write_to_lmdb(dw.train_dataset, 'my_train_db')
-dw.write_to_lmdb(dw.test_dataset, 'my_test_db')
+dw.write_to_lmdb(dw.train_dataset, 'my_train_db',map_size = 1073741824)#1GB
+dw.write_to_lmdb(dw.train_dataset, 'my_train_db',map_size = 4194304)#4MB
+dw.write_to_lmdb(dw.train_dataset, 'my_train_db',map_size = 9252000000)#9.252GB
+dw.write_to_lmdb(dw.test_dataset, 'my_test_db',map_size = 1000000000)
 """
 
    
