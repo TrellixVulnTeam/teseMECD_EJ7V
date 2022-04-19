@@ -15,3 +15,6 @@ books/
 **/my-model2/**
 **/my_train_db/**
 **/my_test_db/**
+**/my_dev_db/**
+**/my_img_db/**
+**/lxmert/data/**

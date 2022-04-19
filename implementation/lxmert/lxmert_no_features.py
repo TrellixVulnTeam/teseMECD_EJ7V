@@ -26,9 +26,9 @@ class MyDataset(torch.utils.data.Dataset):
 class MyTrainer():
     def __init__(self,model,device='cpu'):
         self.device = device
-        self.train = self.read_dataset(data_path ='./e-ViL/data/', dataset_path='esnlive_train.csv',
+        self.train = self.read_dataset(data_path ='../e-ViL/data/', dataset_path='esnlive_train.csv',
                                        img_path='flickr30k_images/flickr30k_images/')
-        self.test = self.read_dataset(data_path ='./e-ViL/data/', dataset_path='esnlive_test.csv',
+        self.test = self.read_dataset(data_path ='../e-ViL/data/', dataset_path='esnlive_test.csv',
                                        img_path='flickr30k_images/flickr30k_images/')
         self.train_dataset = MyDataset(self.train['hypothesis'].values,
                                  self.train['image'].values,
@@ -60,6 +60,8 @@ class MyTrainer():
                 optim.zero_grad()
                 outputs = model.forward(text,img,label)
                 loss = outputs.loss
+                print(label)
+                print(loss)
                 loss.backward()
                 optim.step()
                 break
@@ -194,7 +196,7 @@ if task =='train':
     model = Lxmert()
     trainer = MyTrainer(model,device=device)
     trainer.train_model(epochs=1)
-    model.save_model("my_model")
+    #model.save_model("my_model")
 elif task =='test':
     model = Lxmert()
     model.load_model("my_model")

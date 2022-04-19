@@ -1,5 +1,0 @@
-boxes=torch.ones(4,36,4)
-original_size = (4,2)
-
-boxes=torch.ones(2,36,4)
-original_size=torch.ones(2,2)
