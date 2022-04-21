@@ -1,0 +1,15 @@
+ssh.hlt.inesc-id.pt
+
+u121170
+
+CPU
+x01
+x12
+
+GPU
+g01
+g06
+
+ssh -L 8080:127.0.0.1:8080 u121170@ssh.hlt.inesc-id.pt
+ssh -L 8080:127.0.0.1:8080 g01
+jupyter notebook --port 8080 --no-browser --ip=127.0.0.1

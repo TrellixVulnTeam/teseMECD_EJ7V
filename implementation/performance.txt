@@ -1,5 +1,5 @@
 58 with ram images (size 1000 batch size 64) -> 12m58s 
-58 without ram images (size 1000 batch size 64) -> 13m55s 
+max length 58 without ram images (size 1000 batch size 64) -> 13m55s 
 
 dynamic padding without ram images (size 1000 batch size 64) -> 6m56s
 dynamic padding with ram images (size 1000 batch size 64) -> 6m55s
