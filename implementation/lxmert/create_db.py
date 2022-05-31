@@ -141,9 +141,9 @@ class DBWriter_pytorch_dynamic():
                 curr_max_length = curr_length 
         return min(curr_max_length,max_possible)
     
-    def compute_max_length_easy(self,dataframe,current_index,batch_size, max_possible = 58):
+    def compute_max_length_easy(self,dataframe,current_index,batch_size, max_possible = 90):
         end = min(current_index+batch_size-1,len(dataframe.index)-1)
-        return min(len(dataframe.iloc[end]['hypothesis']),max_possible)
+        return max(len(dataframe.iloc[end]['hypothesis']),max_possible)
     
     def write_to_lmdb(self,pd_dataframe,filename,batch_size = 64, map_size = 1000000000):#1GB        
         env = lmdb.open(filename, map_size= map_size)
@@ -535,8 +535,8 @@ dw.write_to_lmdb(dw.train_dataset, 'my_train_db',map_size = 9252000000)#9.252GB
 dw.write_to_lmdb(dw.test_dataset, 'my_test_db',map_size = 1000000000)
 """
 """
-dbw = DBWriter()
-dbw.write_to_lmdb(dbw.train_dataset, 'my_train_db',map_size= 41943040)#40MB
+dbw = DBWriter_pytorch_dynamic()
+dbw.write_to_lmdb(dbw.train_dataset, 'size90',map_size= 41943040)#40MB
 """
 """
 idb = ImageDB()

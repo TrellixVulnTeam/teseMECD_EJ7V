@@ -10,9 +10,10 @@ GPU
 g01
 g06
 
-ssh -L 8080:127.0.0.1:8080 u121170@ssh.hlt.inesc-id.pt
-ssh -L 8080:127.0.0.1:8080 g01
-jupyter notebook --port 8080 --no-browser --ip=127.0.0.1 --allow-root
+ssh -L 8091:127.0.0.1:8091 u121170@ssh.hlt.inesc-id.pt
+ssh -L 8091:127.0.0.1:8091 g01
+jupyter notebook --port 8091 --no-browser --ip=127.0.0.1 --allow-root
+python3 -m notebook --port 8091 --no-browser --ip=127.0.0.1 --allow-root
 
 export PATH=/cfs/home/u121170/.local/bin/kaggle:$PATH
 
@@ -20,5 +21,17 @@ export PATH=/cfs/home/u121170/.local/bin/kaggle:$PATH
 
 ssh -L 8080:127.0.0.1:8080 u121170@172.16.22.1
 
-nohup python lxmert.py > output.txt &
+nohup python3 lxmert_features/.py > output.txt &
 ps ax | grep lxmert.py
+
+GPU = n +1
+GPU 4 -> primeira QUADRO RTX 6000 (GPU 5)
+GPU 4 -> (GPU 5)
+
+ps -o user= -p PIDHERE
+
+"""
+train 401717 -> 3200 MB -> 3355443200
+test 14740 -> 116 MB -> 121634816
+dev 14339 -> 116 MB 
+"""

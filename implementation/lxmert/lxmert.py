@@ -49,7 +49,7 @@ import torch
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from transformers import LxmertTokenizer, LxmertConfig, LxmertModel
+from transformers import LxmertTokenizer, LxmertConfig, LxmertModel, LxmertForPreTraining
 from modeling_frcnn import GeneralizedRCNN
 import utils
 from processing_image import Preprocess
