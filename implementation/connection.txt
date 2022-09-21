@@ -31,6 +31,14 @@ ps ax | grep lxmert.py
 GPU = n +1
 GPU 4 -> primeira QUADRO RTX 6000 (GPU 5)
 GPU 4 -> (GPU 5)
+GPU maquina 7 -> 3
+
+NUMEROS GPUS DA G06
+MAP 
+Alocada -> Real
+2 -> 7
+7 -> 3
+3 -> 2
 
 ps -o user= -p PIDHERE
 
@@ -39,5 +47,3 @@ train 401717 -> 3200 MB -> 3355443200
 test 14740 -> 116 MB -> 121634816
 dev 14339 -> 116 MB 
 """
-
-g06 maquina 7 -> 3
