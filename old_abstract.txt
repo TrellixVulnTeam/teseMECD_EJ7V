@@ -1,0 +1,20 @@
+Modelos multimodais de Aprendizagem Profunda que utilizam a informação presente em duas modalidades (textual e visual) têm demonstrado ser bastante úteis para uma série de tarefas de Aprendizagem. A modalidade visual pode ser utilizada como auxiliar relativamente à textual para as tarefas de \emph{Natural Language Processing} que atualmente existem, assemelhemando-se mais à forma como os humanos processam a informação, de forma multimodal.
+
+
+%Um exemplo de tarefas que já existem que podem ser auxiliadas pela modalidade visual é a de \emph{Inferência de Língua Natural}, onde se verifica se uma premissa textual é validada, é neutral ou é negada por uma hipótese textual. Ao incluir uma nova modalidade a performance da anterior tarefa pode melhorar consideravelmente, criando-se assim, neste caso concreto, uma nova tarefa, \emph{Inferência Multimodal de Visão\&Linguagem}, onde se acresce uma hipótese textual e a premissa apresenta então duas componentes multimodais: a linguística e a visual.
+
+%De novas tarefas que podem ser criadas utilizando ambas as modalidades é exemplo a "Resposta a Perguntas Visuais", onde um utilizador pode colocar em linguagem natural questões sobre uma imagem a um modelo de Aprendizagem Profunda, onde será feito recurso às modalidades visual e linguística para fornecer respostas.
+
+Esta tese irá explorar como se pode melhorar a aprendizagem de modelos pré-existentes na tarefa de \emph{Inferência Multimodal de Visão\&Linguagem}, mais especificamente no que toca a relações espaciais de objetos ou entidades, embora as conclusões retiradas sejam também aplicáveis a outras tarefas ou dados multimodais. 
+
+A ideia é não criar um modelo maior, mas utilizar dados de treino de relações espaciais já existentes e modelos já existentes para melhorar a sua performance na tarefa de \emph{Inferência Multimodal de Visão\&Linguagem}. A razão para não querer criar modelos maiores é não só o poder não ser comportável para os recursos disponíveis treinar um modelo de grande envergadura capaz de competir com modelos \emph{state-of-the-art}, como também o ser bastante relevante no contexto de Edge AI utilizar modelos mais pequenos e, para além disso, o ser também útil para aqueles mesmos modelos maiores a análise exploratória que será feita nesta dissertação sobre representações multimodais de relações espaciais.
+
+Será assim explorado como se pode promover a aprendizagem de representações espaciais num dataset de \emph{Visual Spatial Reasoning} e melhorar a performance de modelos existentes.
+
+Irão ser exploradas duas abordagens diferentes e complementares para melhorar a performance . 
+
+A primeira será a extensão dos dados de treino com relações espaciais e objetos para obter um conjunto de treino mais abrangente. A segunda será a utilização de um tipo de aprendizagem diferente, muito utilizado em modelos \emph{state-of-the-art}. Esse tipo de aprendizagem será a Aprendizagem Contrastiva, através da utilização de uma \emph{Loss Contrastiva} explorada como forma de obter melhor representações multimodais de relações espaciais. Ao contrastar exemplos do conjunto de dados que pertençam ao mesmo grupo, espera-se obter melhores resultados no desempenho dos modelos, por oposição a utilizar uma \emph{Cross-Entropy Loss}, mais tradicional.
+
+\vfill
+
+\textbf{\Large Palavras-chave:} Aprendizagem Profunda, Aprendizagem Contrastiva, Raciocínio Espacio- Visual, Inferência Multimodal, Inferência com Visão e Linguagem, Extensão de Dados
