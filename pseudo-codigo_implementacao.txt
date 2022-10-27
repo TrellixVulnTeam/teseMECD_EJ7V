@@ -1,0 +1,9 @@
+pseudo-codigo:
+
+1. Ler os ficheiros na pasta
+
+2. Se o ficheiro for doc ou docx em vez de pdf, 
+converter primeiro para pdf (fazer download e guardar
+na pasta, converter, abrir para um IO
+
+3. Se o ficheiro for excel não fazer nada

@@ -1,0 +1,50 @@
+EVE-ROI
+VILLA
+METER
+COCA 
+OFA
+
+We present VILLA, the first known effort on large-scale adversarial training for
+vision-and-language (V+L) representation learning. VILLA consists of two training
+stages: (i) task-agnostic adversarial pre-training; followed by (ii) task-specific
+adversarial finetuning. Instead of adding adversarial perturbations on image pixels
+and textual tokens, we propose to perform adversarial training in the embedding
+space of each modality
+
+SIM VLM Note that our model is not pretrained with a discriminative task such as the
+contrastive loss, hence we use an average pooling of encoder outputs as image features. Results verify that our model has also learned
+high-quality image representation.
+
+OFA outperforms contrastive-based models such as SimCLR [32] and MoCo-v3 [33, 35] with similar
+parameters
+
+SOHO : As region-based visual features usually represent parts of an image, it is challenging for existing visionlanguage models to fully understand the semantics from
+paired natural languages. In this paper, we propose SOHO
+to “See Out of tHe bOx” that takes a whole image as input, and learns vision-language representation in an endto-end manner. SOHO does not require bounding box annotations which enables inference 10 times faster than regionbased approaches. In particular, SOHO learns to extract
+comprehensive yet compact image features through a visual
+dictionary (VD) that facilitates cross-modal understanding.
+VD is designed to represent consistent visual abstractions
+of similar semantics. 
+
+VILT Augmentation Strategies. Previous work on contrastive
+visual representation learning (Chen et al., 2020a;b) showed
+that gaussian blur, not employed by RandAugment, brings
+noticeable gains to downstream performance compared with
+a simpler augmentation strategy (He et al., 2020). Exploration of appropriate augmentation strategies for textual and
+visual inputs would be a valuable addition.
+
+VILT: Four categories of vision-and-language models. The height of each rectangle denotes its relative computational size. VE, TE,
+and MI are short for visual embedder, textual embedder, and modality interaction, respectively
+
+.......................
+
+Contrastive Models:
+
+CoCa Contrastive Captioner
+
+Clip 
+ 
+UNIMO: Towards Unified-Modal Understanding 
+	and Generation via Cross-Modal Contrastive Learning
+
+
