@@ -1,0 +1,53 @@
+----------------------------------
+Text Encoders
+
+%BERT \cite{devlin2018bert}
+
+%ROBERTA \cite{liu2019roberta}
+
+%GPT \cite{radford2018improving}
+
+%GPT2 \cite{radford2019language}
+
+%BartFaster \cite{lewis2019bart}
+
+%UniLM \cite{dong2019unified}
+
+%T5 \cite{raffel2020exploring}
+
+--------------------------------
+Vision Encoder
+%Faster RCNN \cite{ren2015faster}
+
+%RESNET \cite{he2016deep}
+
+%VIT \cite{dosovitskiy2020image}
+
+%SWIN Transformer \cite{liu2021swin}
+
+%RCNN \cite{girshick2014rich}
+
+%EfficientNet \cite{tan2019efficientnet}
+
+%REGNET \cite{radosavovic2020designing}
+
+-------------------------------------
+V&L Models
+
+PixelBERT \cite{huang2020pixel}
+OSCAR \cite{li2020oscar}
+EVE-ROI \cite{xie2019visual}
+UNITER \cite{chen2020uniter}
+VILLA \cite{gan2020large}
+UNIMO \cite{li2020unimo}
+METER \cite{dou2021empirical}
+CLIP-ViL \cite{shen2021much}
+SOHO \cite{huang2021seeing}
+SimVLM \cite{wang2021simvlm}
+COCA \cite{yu2022coca}
+OFA \cite{wang2022unifying}
+VisualBERT \cite{su2019vl}
+ViLBERT \cite{lu2019vilbert}
+VL-BERT \cite{su2019vl}
+ViLT \cite{kim2021vilt}
+LXMERT \cite{su2019vl}
