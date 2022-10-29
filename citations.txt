@@ -34,6 +34,9 @@ Vision Encoder
 -------------------------------------
 V&L Models
 
+ALIGN \cite{jia2021scaling}
+FLAVA \cite{singh2022flava}
+VL-T5 \cite{cho2021unifying}
 PixelBERT \cite{huang2020pixel}
 OSCAR \cite{li2020oscar}
 EVE-ROI \cite{xie2019visual}
